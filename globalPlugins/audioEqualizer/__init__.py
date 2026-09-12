@@ -161,6 +161,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tools_menu.DestroyItem(self._submenu_item)
         except Exception:
             pass
+        super().terminate()
 
     # --- Comandos y Atajos de Teclado Reasignables en NVDA ---
 

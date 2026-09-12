@@ -1,0 +1,163 @@
+# Translation of Audio Equalizer into en.
+# Copyright (C) 2026 Daliana
+# This file is distributed under the same license as the Audio Equalizer package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: audioEqualizer 1.2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-12 19:15-0300\n"
+"PO-Revision-Date: 2026-09-12 19:15-0300\n"
+"Last-Translator: Daliana <daliana907@github.com>\n"
+"Language-Team: en\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Abre el diálogo de configuración del ecualizador de audio."
+msgstr "Opens the audio equalizer configuration dialog."
+
+msgid "Activa o desactiva el filtro anti-encajonamiento (400 Hz)."
+msgstr "Toggles the boxiness reduction filter (400 Hz)."
+
+msgid "Activa o desactiva el filtro anti-sibilancia para suavizar el seseo."
+msgstr "Toggles the de-essing filter to soften sibilance."
+
+msgid "Activa o desactiva el filtro contra la fatiga auditiva."
+msgstr "Toggles the listening fatigue relief filter."
+
+msgid "Activa o desactiva el filtro contra zumbidos eléctricos de red."
+msgstr "Toggles the mains hum rejection filter."
+
+msgid "Activa o desactiva el filtro subsónico para frecuencias inaudibles."
+msgstr "Toggles the subsonic filter for inaudible frequencies."
+
+msgid "Activa o desactiva el modo de audio mono."
+msgstr "Toggles mono audio mode."
+
+msgid "Activa o desactiva el realce de claridad vocal y presencia."
+msgstr "Toggles speech clarity and presence enhancement."
+
+msgid "Activa o desactiva la compensación de volumen (Loudness)."
+msgstr "Toggles loudness compensation."
+
+msgid "Activa o desactiva la extensión de subgraves profundos (70 Hz)."
+msgstr "Toggles deep sub-bass extension (70 Hz)."
+
+msgid "Activa o desactiva la optimización acústica para la voz de NVDA."
+msgstr "Toggles acoustic optimization for NVDA speech."
+
+msgid "Activa o desactiva la preamplificación automática para evitar distorsión."
+msgstr "Toggles automatic preamplification to prevent clipping."
+
+msgid "Activa o desactiva rápidamente el ecualizador de audio."
+msgstr "Quickly toggles the audio equalizer on or off."
+
+msgid "Anuncia por voz el estado completo del ecualizador: perfil activo, preamplificación y mejoras aplicadas."
+msgstr "Announces full equalizer status: active profile, preamp, and applied enhancements."
+
+msgid "Auditoría de conflictos - Ecualizador de Audio"
+msgstr "Shortcut Conflicts Audit - Audio Equalizer"
+
+msgid "Aumenta el ancho estéreo en 10 %."
+msgstr "Increases stereo width by 10%."
+
+msgid "Aumenta el balance hacia el canal derecho."
+msgstr "Shifts balance towards the right channel."
+
+msgid "Aumenta la preamplificación manual en 1 dB."
+msgstr "Increases manual preamp by 1 dB."
+
+msgid "Aumenta los agudos rápidos en 1 dB."
+msgstr "Increases quick treble by 1 dB."
+
+msgid "Aumenta los graves rápidos en 1 dB."
+msgstr "Increases quick bass by 1 dB."
+
+msgid "Ayuda"
+msgstr "Help"
+
+msgid "Cambia al perfil de ecualización anterior."
+msgstr "Switches to previous equalizer profile."
+
+msgid "Cambia al siguiente perfil de ecualización."
+msgstr "Switches to next equalizer profile."
+
+msgid "Centra el balance de audio estéreo."
+msgstr "Centers stereo audio balance."
+
+msgid "Comprobar conflictos con otros complementos..."
+msgstr "Check shortcut conflicts with other add-ons..."
+
+msgid "Comprueba si existen conflictos de atajos de teclado con otros complementos."
+msgstr "Checks for keyboard shortcut conflicts with other add-ons."
+
+msgid "Configuración..."
+msgstr "Settings..."
+
+msgid "Conflictos detectados - Ecualizador de Audio"
+msgstr "Conflicts detected - Audio Equalizer"
+
+msgid "Descargar e instalar motor de audio (Equalizer APO)..."
+msgstr "Download and install audio engine (Equalizer APO)..."
+
+msgid "Disminuye el ancho estéreo en 10 %."
+msgstr "Decreases stereo width by 10%."
+
+msgid "Disminuye la preamplificación manual en 1 dB."
+msgstr "Decreases manual preamp by 1 dB."
+
+msgid "Disminuye los agudos rápidos en 1 dB."
+msgstr "Decreases quick treble by 1 dB."
+
+msgid "Disminuye los graves rápidos en 1 dB."
+msgstr "Decreases quick bass by 1 dB."
+
+msgid "Ecualizador de Audio"
+msgstr "Audio Equalizer"
+
+msgid "Ecualizador de audio"
+msgstr "Audio equalizer"
+
+msgid "Ejecuta la comprobación auditiva de canales de audio (izquierdo, derecho y centro)."
+msgstr "Performs audio channel speaker test (left, right, and center)."
+
+msgid "Error - Ecualizador de audio"
+msgstr "Error - Audio Equalizer"
+
+msgid "Invierte o restaura los canales izquierdo y derecho (L/R)."
+msgstr "Swaps or restores left and right audio channels (L/R)."
+
+msgid "La documentación no se encuentra disponible."
+msgstr "Documentation is not available."
+
+msgid "Mueve el balance hacia el canal izquierdo."
+msgstr "Shifts balance towards the left channel."
+
+msgid "No se han detectado conflictos de atajos de teclado con otros complementos activos en este sistema.\n"
+"\n"
+"Todos los atajos configurados para el Ecualizador de Audio están listos para usarse sin interferencias."
+msgstr "No keyboard shortcut conflicts detected with active add-ons.\n"
+"\n"
+"All shortcuts configured for Audio Equalizer are ready to use without interference."
+
+msgid "No se pudo abrir la documentación: {error}"
+msgstr "Could not open documentation: {error}"
+
+msgid "Restablece la ecualización a una respuesta plana (0 dB)."
+msgstr "Resets equalization to a flat frequency response (0 dB)."
+
+msgid "Se han detectado posibles conflictos de atajos de teclado con otros complementos o comandos activos:\n"
+"\n"
+""
+msgstr "Possible keyboard shortcut conflicts detected with active add-ons or commands:\n"
+"\n"
+""
+
+msgid "Sugerencia: Puedes cambiar o personalizar cualquiera de estos atajos en el menú de NVDA > Preferencias > Gestos de entrada > Audio Equalizer."
+msgstr "Tip: You can customize any of these shortcuts in NVDA menu > Preferences > Input Gestures > Audio Equalizer."
+
+msgid "Ver registro de filtros (Log)..."
+msgstr "View filter log..."
+

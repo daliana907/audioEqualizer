@@ -3,11 +3,11 @@
 [![Pruebas](https://github.com/daliana907/audioEqualizer/actions/workflows/pruebas.yml/badge.svg)](https://github.com/daliana907/audioEqualizer/actions/workflows/pruebas.yml)
 
 Autora: Daliana  
-Versión: 1.1.0  
+Versión: 1.2.0  
 Compatibilidad: NVDA 2024.1 o posterior  
 Licencia: GNU GPL v2  
 
-[Descargar última versión / Download latest (.nvda-addon)](https://github.com/daliana907/audioEqualizer/releases/latest/download/audioEqualizer-1.1.0.nvda-addon) · [Registro de cambios](CHANGELOG.md)
+[Descargar última versión / Download latest (.nvda-addon)](https://github.com/daliana907/audioEqualizer/releases/latest/download/audioEqualizer-1.2.0.nvda-addon) · [Registro de cambios](CHANGELOG.md)
 
 ---
 

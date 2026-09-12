@@ -1,0 +1,163 @@
+# Translation of Audio Equalizer into es.
+# Copyright (C) 2026 Daliana
+# This file is distributed under the same license as the Audio Equalizer package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: audioEqualizer 1.2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-12 19:15-0300\n"
+"PO-Revision-Date: 2026-09-12 19:15-0300\n"
+"Last-Translator: Daliana <daliana907@github.com>\n"
+"Language-Team: es\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Abre el diálogo de configuración del ecualizador de audio."
+msgstr "Abre el diálogo de configuración del ecualizador de audio."
+
+msgid "Activa o desactiva el filtro anti-encajonamiento (400 Hz)."
+msgstr "Activa o desactiva el filtro anti-encajonamiento (400 Hz)."
+
+msgid "Activa o desactiva el filtro anti-sibilancia para suavizar el seseo."
+msgstr "Activa o desactiva el filtro anti-sibilancia para suavizar el seseo."
+
+msgid "Activa o desactiva el filtro contra la fatiga auditiva."
+msgstr "Activa o desactiva el filtro contra la fatiga auditiva."
+
+msgid "Activa o desactiva el filtro contra zumbidos eléctricos de red."
+msgstr "Activa o desactiva el filtro contra zumbidos eléctricos de red."
+
+msgid "Activa o desactiva el filtro subsónico para frecuencias inaudibles."
+msgstr "Activa o desactiva el filtro subsónico para frecuencias inaudibles."
+
+msgid "Activa o desactiva el modo de audio mono."
+msgstr "Activa o desactiva el modo de audio mono."
+
+msgid "Activa o desactiva el realce de claridad vocal y presencia."
+msgstr "Activa o desactiva el realce de claridad vocal y presencia."
+
+msgid "Activa o desactiva la compensación de volumen (Loudness)."
+msgstr "Activa o desactiva la compensación de volumen (Loudness)."
+
+msgid "Activa o desactiva la extensión de subgraves profundos (70 Hz)."
+msgstr "Activa o desactiva la extensión de subgraves profundos (70 Hz)."
+
+msgid "Activa o desactiva la optimización acústica para la voz de NVDA."
+msgstr "Activa o desactiva la optimización acústica para la voz de NVDA."
+
+msgid "Activa o desactiva la preamplificación automática para evitar distorsión."
+msgstr "Activa o desactiva la preamplificación automática para evitar distorsión."
+
+msgid "Activa o desactiva rápidamente el ecualizador de audio."
+msgstr "Activa o desactiva rápidamente el ecualizador de audio."
+
+msgid "Anuncia por voz el estado completo del ecualizador: perfil activo, preamplificación y mejoras aplicadas."
+msgstr "Anuncia por voz el estado completo del ecualizador: perfil activo, preamplificación y mejoras aplicadas."
+
+msgid "Auditoría de conflictos - Ecualizador de Audio"
+msgstr "Auditoría de conflictos - Ecualizador de Audio"
+
+msgid "Aumenta el ancho estéreo en 10 %."
+msgstr "Aumenta el ancho estéreo en 10 %."
+
+msgid "Aumenta el balance hacia el canal derecho."
+msgstr "Aumenta el balance hacia el canal derecho."
+
+msgid "Aumenta la preamplificación manual en 1 dB."
+msgstr "Aumenta la preamplificación manual en 1 dB."
+
+msgid "Aumenta los agudos rápidos en 1 dB."
+msgstr "Aumenta los agudos rápidos en 1 dB."
+
+msgid "Aumenta los graves rápidos en 1 dB."
+msgstr "Aumenta los graves rápidos en 1 dB."
+
+msgid "Ayuda"
+msgstr "Ayuda"
+
+msgid "Cambia al perfil de ecualización anterior."
+msgstr "Cambia al perfil de ecualización anterior."
+
+msgid "Cambia al siguiente perfil de ecualización."
+msgstr "Cambia al siguiente perfil de ecualización."
+
+msgid "Centra el balance de audio estéreo."
+msgstr "Centra el balance de audio estéreo."
+
+msgid "Comprobar conflictos con otros complementos..."
+msgstr "Comprobar conflictos con otros complementos..."
+
+msgid "Comprueba si existen conflictos de atajos de teclado con otros complementos."
+msgstr "Comprueba si existen conflictos de atajos de teclado con otros complementos."
+
+msgid "Configuración..."
+msgstr "Configuración..."
+
+msgid "Conflictos detectados - Ecualizador de Audio"
+msgstr "Conflictos detectados - Ecualizador de Audio"
+
+msgid "Descargar e instalar motor de audio (Equalizer APO)..."
+msgstr "Descargar e instalar motor de audio (Equalizer APO)..."
+
+msgid "Disminuye el ancho estéreo en 10 %."
+msgstr "Disminuye el ancho estéreo en 10 %."
+
+msgid "Disminuye la preamplificación manual en 1 dB."
+msgstr "Disminuye la preamplificación manual en 1 dB."
+
+msgid "Disminuye los agudos rápidos en 1 dB."
+msgstr "Disminuye los agudos rápidos en 1 dB."
+
+msgid "Disminuye los graves rápidos en 1 dB."
+msgstr "Disminuye los graves rápidos en 1 dB."
+
+msgid "Ecualizador de Audio"
+msgstr "Ecualizador de Audio"
+
+msgid "Ecualizador de audio"
+msgstr "Ecualizador de audio"
+
+msgid "Ejecuta la comprobación auditiva de canales de audio (izquierdo, derecho y centro)."
+msgstr "Ejecuta la comprobación auditiva de canales de audio (izquierdo, derecho y centro)."
+
+msgid "Error - Ecualizador de audio"
+msgstr "Error - Ecualizador de audio"
+
+msgid "Invierte o restaura los canales izquierdo y derecho (L/R)."
+msgstr "Invierte o restaura los canales izquierdo y derecho (L/R)."
+
+msgid "La documentación no se encuentra disponible."
+msgstr "La documentación no se encuentra disponible."
+
+msgid "Mueve el balance hacia el canal izquierdo."
+msgstr "Mueve el balance hacia el canal izquierdo."
+
+msgid "No se han detectado conflictos de atajos de teclado con otros complementos activos en este sistema.\n"
+"\n"
+"Todos los atajos configurados para el Ecualizador de Audio están listos para usarse sin interferencias."
+msgstr "No se han detectado conflictos de atajos de teclado con otros complementos activos en este sistema.\n"
+"\n"
+"Todos los atajos configurados para el Ecualizador de Audio están listos para usarse sin interferencias."
+
+msgid "No se pudo abrir la documentación: {error}"
+msgstr "No se pudo abrir la documentación: {error}"
+
+msgid "Restablece la ecualización a una respuesta plana (0 dB)."
+msgstr "Restablece la ecualización a una respuesta plana (0 dB)."
+
+msgid "Se han detectado posibles conflictos de atajos de teclado con otros complementos o comandos activos:\n"
+"\n"
+""
+msgstr "Se han detectado posibles conflictos de atajos de teclado con otros complementos o comandos activos:\n"
+"\n"
+""
+
+msgid "Sugerencia: Puedes cambiar o personalizar cualquiera de estos atajos en el menú de NVDA > Preferencias > Gestos de entrada > Audio Equalizer."
+msgstr "Sugerencia: Puedes cambiar o personalizar cualquiera de estos atajos en el menú de NVDA > Preferencias > Gestos de entrada > Audio Equalizer."
+
+msgid "Ver registro de filtros (Log)..."
+msgstr "Ver registro de filtros (Log)..."
+
