@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Audio Equalizer para NVDA</title>
+</head>
+<body>
+<h1>Audio Equalizer para NVDA</h1>
+<p>Autora: Daliana | Versión: 1.1.0 | Compatibilidad: NVDA 2024.1 o posterior | Licencia: GNU GPL v2</p>
+<p>Este complemento añade un ecualizador de 31 bandas para calibrar el sonido de Windows con NVDA de forma completamente accesible. Permite ajustar graves y agudos al instante, elegir o crear perfiles de sonido, corregir el balance de auriculares y aplicar filtros para mejorar la claridad de la voz del lector de pantalla o descansar el oído en sesiones largas.</p>
+
+<h2>Requisitos y funcionamiento</h2>
+<p>El ecualizador aplica los ajustes directamente a través de Equalizer APO, un motor de sonido para Windows que procesa el audio en tiempo real sin retrasos ni distorsión.</p>
+<ul>
+<li>Para que funcione, necesitas tener instalado Equalizer APO en el equipo.</li>
+<li>Si todavía no lo tienes instalado, el complemento lo detecta solo al abrirlo y te ofrece descargarlo en tu carpeta de descargas según tu versión de Windows (de 32 o 64 bits). Al terminar la descarga, podrás abrir el instalador y seguir los pasos normales.</li>
+<li>También puedes descargarlo cuando quieras desde el menú de NVDA &gt; Herramientas &gt; Ecualizador de Audio &gt; Descargar e instalar motor de audio (Equalizer APO)... o desde su página web oficial: <a href="https://sourceforge.net/projects/equalizerapo/">Equalizer APO en SourceForge</a>.</li>
+</ul>
+
+<h2>Atajos de teclado predeterminados</h2>
+<ul>
+<li><code>NVDA + E</code>: Abre la ventana del ecualizador.</li>
+<li><code>NVDA + Shift + E</code>: Activa o desactiva la ecualización.</li>
+<li><code>NVDA + Control + E</code>: Pasa al siguiente perfil de sonido.</li>
+<li><code>NVDA + Control + Shift + E</code>: Vuelve al perfil de sonido anterior.</li>
+<li><code>NVDA + Shift + L</code>: Dice por voz el perfil actual, la preamplificación y los filtros que estén encendidos.</li>
+</ul>
+<p>Todos los comandos del complemento se pueden reasignar o asignar a teclas nuevas desde el menú de NVDA &gt; Preferencias &gt; Gestos de entrada, abriendo la categoría "Ecualizador de audio".</p>
+
+<h2>Opciones disponibles en la ventana</h2>
+<ul>
+<li>Perfiles de sonido: selección entre varios perfiles preparados (Plano, Música, Estudio, Películas, Juegos, Voz, etc.), creación de perfiles propios y botón para probar los canales de audio.</li>
+<li>Preamplificación y control de ganancia: deslizador de ganancia general y casilla de preamplificación automática para evitar saturación digital.</li>
+<li>Balance y opciones estéreo: modo mono, inversión de canales, ajuste de balance entre izquierda y derecha y amplitud de la imagen estéreo.</li>
+<li>Controles rápidos de tono: teclas y controles directos para subir o bajar graves y agudos al momento.</li>
+<li>Filtros acústicos para auriculares: compensación Loudness a bajo volumen, claridad para la voz de NVDA, presencia vocal, filtros contra sibilancias, fatiga auditiva, sonido hueco y zumbidos eléctricos.</li>
+<li>Ecualizador de 31 bandas: controles independientes desde 20 Hz hasta 20 kHz entre -12 dB y +12 dB.</li>
+<li>Herramientas y diagnóstico: visualización del registro de operaciones y comprobación de posibles conflictos de atajos con otros complementos.</li>
+</ul>
+</body>
+</html>

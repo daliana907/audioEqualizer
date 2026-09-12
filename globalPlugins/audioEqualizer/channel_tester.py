@@ -1,0 +1,132 @@
+# -*- coding: utf-8 -*-
+"""
+Generador y reproductor de comprobación de canales de audio (Test estéreo).
+
+Crea de forma procedural un archivo WAV estéreo temporal de alta fidelidad con:
+1. Canal Izquierdo: tono senoidal de 500 Hz emitido exclusivamente por el auricular izquierdo.
+2. Silencio de separación de 150 milisegundos.
+3. Canal Derecho: tono senoidal de 500 Hz emitido exclusivamente por el auricular derecho.
+4. Silencio de separación de 150 milisegundos.
+5. Centro Estéreo: acorde armónico consonante (Do5 523.25 Hz + Mi5 659.25 Hz) centrado al 50% en ambos lados.
+
+Aplica una rampa de desvanecimiento suave (fade-in y fade-out) de 20 milisegundos para eliminar
+cualquier chasquido (pop) por discontinuidad de fase al arrancar o cortar la onda sonora.
+"""
+
+import os
+import math
+import wave
+import struct
+import tempfile
+import threading
+
+try:
+    import winsound
+except ImportError:
+    winsound = None
+
+try:
+    from logHandler import log
+except ImportError:
+    import logging
+    log = logging.getLogger("audioEqualizer")
+
+try:
+    import ui
+except ImportError:
+    class _UIFallback:
+        @staticmethod
+        def message(msg):
+            pass
+    ui = _UIFallback()
+
+_TEST_WAV_PATH = os.path.join(tempfile.gettempdir(), "audio_equalizer_channel_test.wav")
+
+
+def generate_channel_test_wav(sample_rate: int = 44100) -> str:
+    """Genera en el disco temporal el archivo WAV calibrado para la prueba de canales.
+
+    Sintetiza matemáticamente las ondas sonoras en formato PCM estéreo de 16 bits a 44.1 kHz.
+    Devuelve la ruta absoluta al archivo generado.
+    """
+    tone_dur = 0.35      # 350 milisegundos para cada canal individual
+    silence_dur = 0.15   # 150 milisegundos de silencio entre tonos
+    center_dur = 0.55    # 550 milisegundos para el acorde armónico centrado
+    fade_dur = 0.02      # 20 milisegundos de rampa suave anti-chasquidos
+    fade_samples = int(sample_rate * fade_dur)
+
+    def _generate_segment(freqs, duration: float, pan_l: float = 1.0, pan_r: float = 1.0):
+        """Genera muestras PCM normalizadas para una o más frecuencias con panoramización."""
+        num_samples = int(sample_rate * duration)
+        amp = 0.7 / len(freqs)  # Normalizamos la amplitud para no sobrepasar el techo digital
+        samples = []
+        for i in range(num_samples):
+            # Envolvente lineal para suavizar entrada y salida
+            if i < fade_samples:
+                env = i / fade_samples
+            elif i > num_samples - fade_samples:
+                env = (num_samples - i) / fade_samples
+            else:
+                env = 1.0
+
+            t = float(i) / sample_rate
+            val = sum(math.sin(2.0 * math.pi * f * t) * amp for f in freqs) * env
+            samples.append((int(val * pan_l * 32767.0), int(val * pan_r * 32767.0)))
+        return samples
+
+    silence = [(0, 0)] * int(sample_rate * silence_dur)
+    all_samples = (
+        _generate_segment([500.0], tone_dur, pan_l=1.0, pan_r=0.0)
+        + silence
+        + _generate_segment([500.0], tone_dur, pan_l=0.0, pan_r=1.0)
+        + silence
+        + _generate_segment([523.25, 659.25], center_dur, pan_l=1.0, pan_r=1.0)
+    )
+
+    try:
+        with wave.open(_TEST_WAV_PATH, "wb") as wf:
+            wf.setnchannels(2)
+            wf.setsampwidth(2)
+            wf.setframerate(sample_rate)
+            packed_frames = bytearray()
+            for sl, sr in all_samples:
+                packed_frames.extend(struct.pack("<hh", sl, sr))
+            wf.writeframes(packed_frames)
+    except Exception as e:
+        log.error(f"AudioEqualizer: Error al generar WAV de prueba en {_TEST_WAV_PATH}: {e}", exc_info=True)
+        try:
+            from . import logger
+            logger.log_error(f"Error generando archivo WAV temporal: {e}", exc=e, component="ChannelTester", context={"path": _TEST_WAV_PATH})
+        except Exception:
+            pass
+        raise
+
+    return _TEST_WAV_PATH
+
+
+def play_channel_test() -> None:
+    """Reproduce la prueba de canales de forma asíncrona en un hilo en segundo plano.
+
+    Garantiza que el hilo principal de NVDA permanezca receptivo y el sintetizador de voz
+    pueda seguir hablando sin bloqueos ni tartamudeos mientras se reproduce el sonido.
+    """
+    if not winsound:
+        log.warning("AudioEqualizer: Módulo winsound no disponible; omitiendo prueba de canales.")
+        ui.message("No se puede reproducir audio: winsound no está disponible.")
+        return
+
+    def _worker():
+        try:
+            if not os.path.exists(_TEST_WAV_PATH):
+                generate_channel_test_wav()
+            winsound.PlaySound(_TEST_WAV_PATH, winsound.SND_FILENAME | winsound.SND_ASYNC)
+        except Exception as e:
+            log.error(f"AudioEqualizer: Error reproduciendo comprobación de canales: {e}", exc_info=True)
+            try:
+                from . import logger
+                logger.log_error(f"Error en reproducción de canales: {e}", exc=e, component="ChannelTester")
+            except Exception:
+                pass
+            ui.message(f"Error al reproducir comprobación de canales: {e}")
+
+    threading.Thread(target=_worker, daemon=True).start()

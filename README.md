@@ -1,0 +1,64 @@
+# Audio Equalizer para NVDA
+
+[![Pruebas](https://github.com/daliana907/audioEqualizer/actions/workflows/pruebas.yml/badge.svg)](https://github.com/daliana907/audioEqualizer/actions/workflows/pruebas.yml)
+
+Autora: Daliana  
+Versión: 1.1.0  
+Compatibilidad: NVDA 2024.1 o posterior  
+Licencia: GNU GPL v2  
+
+[Descargar última versión / Download latest](https://github.com/daliana907/audioEqualizer/releases/latest) · [Registro de cambios](CHANGELOG.md)
+
+---
+
+## Versión en Español
+
+Audio Equalizer es un complemento para NVDA que proporciona un ecualizador gráfico de 31 bandas para calibrar el sonido de Windows con total accesibilidad mediante el lector de pantalla.
+
+### Características principales
+- Calibración de 31 bandas de frecuencia ISO desde 20 Hz hasta 20 kHz.
+- Perfiles de sonido preparados y posibilidad de guardar tus propios ajustes.
+- Ajuste rápido de graves y agudos al vuelo.
+- Preamplificación con protección automática contra distorsión y saturación digital.
+- Balance estéreo y ajuste de ancho estéreo Mid/Side.
+- Opciones de mezcla: forzar audio mono e invertir canales izquierdo y derecho.
+- Filtros para auriculares: claridad de voz de NVDA, presencia vocal, compensación Loudness a bajo volumen, filtros contra fatiga auditiva, sibilancia, resonancias y ruidos de red eléctrica.
+- Prueba sonora de canales estéreo (izquierdo, derecho y centro).
+- Todos los atajos se pueden reasignar en las preferencias de gestos de NVDA bajo la categoría "Ecualizador de audio".
+
+### Requisitos
+Requiere tener instalado Equalizer APO en Windows. Si no lo tienes, el complemento te ofrece descargarlo en tu carpeta de descargas al iniciarlo por primera vez, o puedes descargarlo desde el menú Herramientas > Ecualizador de Audio.
+
+### Atajos de teclado predeterminados
+- NVDA + E: Abrir la ventana del ecualizador.
+- NVDA + Shift + E: Activar o desactivar la ecualización.
+- NVDA + Control + E: Pasar al siguiente perfil de sonido.
+- NVDA + Control + Shift + E: Volver al perfil de sonido anterior.
+- NVDA + Shift + L: Anunciar por voz el perfil activo y los filtros encendidos.
+
+---
+
+## English Version
+
+Audio Equalizer is an accessible 31-band graphic equalizer add-on for NVDA on Windows.
+
+### Main Features
+- 31 standard ISO frequency bands from 20 Hz to 20 kHz.
+- Factory presets and custom user profiles.
+- Quick bass and treble adjustments on the fly.
+- Preamp gain control with automatic clipping protection.
+- Stereo balance and Mid/Side stereo width adjustment.
+- Mono mix and left/right channel swap.
+- Headphone acoustic filters: NVDA voice clarity, vocal presence, low-volume loudness, anti-fatigue, anti-sibilance, and ground hum suppression.
+- Stereo channel orientation test.
+- Every shortcut can be remapped from NVDA Preferences > Input Gestures under "Ecualizador de audio".
+
+### Requirements
+Requires Equalizer APO on Windows. The add-on can download it automatically if not detected.
+
+### Default Shortcuts
+- NVDA + E: Open equalizer window.
+- NVDA + Shift + E: Toggle equalizer on/off.
+- NVDA + Control + E: Switch to next profile.
+- NVDA + Control + Shift + E: Switch to previous profile.
+- NVDA + Shift + L: Announce active profile and filter status.
