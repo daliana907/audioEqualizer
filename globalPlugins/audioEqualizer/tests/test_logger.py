@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import unittest
 import sys
 import os
@@ -21,6 +21,8 @@ sys.modules['logHandler'] = mock_log
 from audioEqualizer import logger
 
 class TestLoggerDiagnostics(unittest.TestCase):
+    def setUp(self):
+        os.makedirs(os.path.dirname(logger.LOG_FILE_PATH), exist_ok=True)
 
     def test_log_error_formatting(self):
         try:

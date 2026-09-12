@@ -179,6 +179,7 @@ def write_audit_log(
     report_lines.append(sep + "\n")
 
     try:
+        os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
         with open(LOG_FILE_PATH, "w", encoding="utf-8") as f:
             f.write("\n".join(report_lines) + "\n")
     except Exception:
@@ -224,6 +225,7 @@ def log_error(
 
     # Registrar de forma persistente en audioEqualizer.log
     try:
+        os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
         with open(LOG_FILE_PATH, "a", encoding="utf-8") as f:
             f.write("\n".join(err_lines) + "\n")
     except Exception as io_err:

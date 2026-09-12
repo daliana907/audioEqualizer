@@ -1,0 +1,69 @@
+name: Publicar complemento
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+*'
+      - 'v[0-9]+.[0-9]+*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    name: Empaquetar y publicar en Releases
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Pasar pruebas unitarias
+        run: python -m unittest discover -s globalPlugins/audioEqualizer/tests -v
+
+      - name: Crear archivo .nvda-addon
+        id: empaquetar
+        run: |
+          python -c "
+          import os, zipfile, re
+
+          with open('manifest.ini', encoding='utf-8') as f:
+              text = f.read()
+
+          name = re.search(r'^\s*name\s*=\s*\"?([^\"\r\n]+)\"?', text, re.M).group(1).strip()
+          ver = re.search(r'^\s*version\s*=\s*\"?([^\"\r\n]+)\"?', text, re.M).group(1).strip()
+
+          versioned = f'{name}-{ver}.nvda-addon'
+          exclude_dirs = {'__pycache__', '.git', '.github', 'tests'}
+          exclude_exts = {'.pyc', '.tmp', '.bat', '.ps1', '.yml'}
+          exclude_files = {'README.md', 'CHANGELOG.md', '.gitignore', 'resultado_github.txt', 'EN_CRISTIANO.md'}
+
+          with zipfile.ZipFile(versioned, 'w', zipfile.ZIP_DEFLATED) as z:
+              for root, dirs, files in os.walk('.'):
+                  dirs[:] = [d for d in dirs if d not in exclude_dirs]
+                  for f in files:
+                      ext = os.path.splitext(f)[1].lower()
+                      if ext in exclude_exts or f in exclude_files or f.endswith('.nvda-addon'):
+                          continue
+                      full_path = os.path.join(root, f)
+                      rel_path = os.path.relpath(full_path, '.')
+                      z.write(full_path, rel_path)
+
+          print(f'VERSIONED_NAME={versioned}')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f'filename={versioned}\n')
+              out.write(f'version={ver}\n')
+          "
+
+      - name: Publicar en GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "${ steps.empaquetar.outputs.filename }"
+          files: ${ steps.empaquetar.outputs.filename }
+          generate_release_notes: true
