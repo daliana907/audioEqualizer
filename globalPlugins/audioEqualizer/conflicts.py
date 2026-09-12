@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Audio Equalizer para NVDA
+# Copyright (C) 2026 Daliana
+# Released under the GNU General Public License version 2 (GPLv2)
 """
 Auditoría y detección dinámica de conflictos de atajos de teclado
 para Audio Equalizer con otros complementos y comandos globales de NVDA.

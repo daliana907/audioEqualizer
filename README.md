@@ -7,7 +7,7 @@ Versión: 1.1.0
 Compatibilidad: NVDA 2024.1 o posterior  
 Licencia: GNU GPL v2  
 
-[Descargar última versión / Download latest](https://github.com/daliana907/audioEqualizer/releases/latest) · [Registro de cambios](CHANGELOG.md)
+[Descargar última versión / Download latest (.nvda-addon)](https://github.com/daliana907/audioEqualizer/releases/latest/download/audioEqualizer-1.1.0.nvda-addon) · [Registro de cambios](CHANGELOG.md)
 
 ---
 
@@ -29,12 +29,9 @@ Audio Equalizer es un complemento para NVDA que proporciona un ecualizador gráf
 ### Requisitos
 Requiere tener instalado Equalizer APO en Windows. Si no lo tienes, el complemento te ofrece descargarlo en tu carpeta de descargas al iniciarlo por primera vez, o puedes descargarlo desde el menú Herramientas > Ecualizador de Audio.
 
-### Atajos de teclado predeterminados
-- NVDA + E: Abrir la ventana del ecualizador.
-- NVDA + Shift + E: Activar o desactivar la ecualización.
-- NVDA + Control + E: Pasar al siguiente perfil de sonido.
-- NVDA + Control + Shift + E: Volver al perfil de sonido anterior.
-- NVDA + Shift + L: Anunciar por voz el perfil activo y los filtros encendidos.
+### Atajos de teclado y personalización
+Para evitar conflictos con los comandos nativos de NVDA o con otros complementos (como Monitor del Sistema), este complemento no asigna atajos de teclado por defecto.
+Puedes acceder a todas las funciones desde el menú NVDA > Herramientas > Ecualizador de Audio, o asignar tus atajos favoritos en el menú de NVDA > Preferencias > Gestos de entrada, en la categoría "Ecualizador de audio".
 
 ---
 
@@ -56,9 +53,6 @@ Audio Equalizer is an accessible 31-band graphic equalizer add-on for NVDA on Wi
 ### Requirements
 Requires Equalizer APO on Windows. The add-on can download it automatically if not detected.
 
-### Default Shortcuts
-- NVDA + E: Open equalizer window.
-- NVDA + Shift + E: Toggle equalizer on/off.
-- NVDA + Control + E: Switch to next profile.
-- NVDA + Control + Shift + E: Switch to previous profile.
-- NVDA + Shift + L: Announce active profile and filter status.
+### Keyboard Shortcuts and Customization
+To prevent conflicts with native NVDA commands or other add-ons (such as System Monitor), this add-on does not assign default keyboard shortcuts.
+All functions are available from NVDA Menu > Tools > Audio Equalizer, or can be assigned custom shortcuts under NVDA Menu > Preferences > Input Gestures, category "Ecualizador de audio".

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Audio Equalizer para NVDA
+# Copyright (C) 2026 Daliana
+# Released under the GNU General Public License version 2 (GPLv2)
 """
 Módulo de registro y auditoría de filtros para Audio Equalizer.
 Permite saber con certeza qué opciones marcadas se aplicaron realmente

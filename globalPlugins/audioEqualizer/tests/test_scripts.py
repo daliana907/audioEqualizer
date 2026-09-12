@@ -23,6 +23,14 @@ class TestScriptsConfiguration(unittest.TestCase):
         for name, kw in scripts.items():
             self.assertIn('category', kw, f'{name} missing category')
             self.assertIn('description', kw, f'{name} missing description')
+            self.assertNotIn('gesture', kw, f'{name} must not have a default gesture assigned')
+
+    def test_secure_mode_cancels_load(self):
+        init_path = os.path.join(os.path.dirname(__file__), '..', '__init__.py')
+        with open(init_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        self.assertIn('secureMode', content)
+        self.assertIn('ActionCancelled', content)
 
 if __name__ == '__main__':
     unittest.main()

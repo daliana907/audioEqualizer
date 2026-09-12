@@ -15,15 +15,11 @@ Audio processing is handled through Equalizer APO, a free system-wide audio engi
 - If it is not installed, the add-on detects your Windows architecture (32 or 64-bit) and offers to download the installer directly to your Downloads folder. Once downloaded, you can run the installer.
 - You can also start the download at any time from NVDA menu > Tools > Audio Equalizer > Download and install audio engine (Equalizer APO)... or from its official website: https://sourceforge.net/projects/equalizerapo/
 
-## Default Keyboard Shortcuts
+## Keyboard Shortcuts and Customization
 
-- NVDA + E: Open the equalizer settings dialog.
-- NVDA + Shift + E: Toggle the equalizer on or off.
-- NVDA + Control + E: Switch to the next sound profile.
-- NVDA + Control + Shift + E: Switch to the previous sound profile.
-- NVDA + Shift + L: Announce current profile, preamp gain, and active acoustic filters.
+To avoid colliding with NVDA native commands or other add-ons (such as System Monitor), this add-on does not assign any default keyboard shortcuts.
 
-All commands can be freely customized or assigned from NVDA menu > Preferences > Input Gestures under the "Ecualizador de audio" category.
+You can access all functions directly from NVDA menu > Tools > Audio Equalizer, or assign your favorite keystrokes from NVDA menu > Preferences > Input Gestures, under the "Ecualizador de audio" category.
 
 Available actions include:
 - Increase / decrease bass (1 dB steps).

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Audio Equalizer para NVDA
+# Copyright (C) 2026 Daliana
+# Released under the GNU General Public License version 2 (GPLv2)
 """
 Perfiles profesionales de ecualización para auriculares (31 bandas ISO).
 Cada perfil incluye su configuración acústica óptima completa:

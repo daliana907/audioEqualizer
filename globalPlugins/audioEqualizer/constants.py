@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Audio Equalizer para NVDA
+# Copyright (C) 2026 Daliana
+# Released under the GNU General Public License version 2 (GPLv2)
 """
 Constantes globales para el ecualizador de audio.
 Define las 31 frecuencias de las bandas ISO, límites de ganancia, balance y valores por defecto.

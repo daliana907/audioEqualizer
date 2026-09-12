@@ -15,15 +15,11 @@ El ecualizador aplica los ajustes directamente a través de Equalizer APO, un mo
 - Si todavía no lo tienes instalado, el complemento lo detecta solo al abrirlo y te ofrece descargarlo en tu carpeta de descargas según tu versión de Windows (de 32 o 64 bits). Al terminar la descarga, podrás abrir el instalador y seguir los pasos normales.
 - También puedes descargarlo cuando quieras desde el menú de NVDA > Herramientas > Ecualizador de Audio > Descargar e instalar motor de audio (Equalizer APO)... o desde su página web oficial: https://sourceforge.net/projects/equalizerapo/
 
-## Atajos de teclado predeterminados
+## Atajos de teclado y personalización
 
-- NVDA + E: Abre la ventana del ecualizador.
-- NVDA + Shift + E: Activa o desactiva la ecualización.
-- NVDA + Control + E: Pasa al siguiente perfil de sonido.
-- NVDA + Control + Shift + E: Vuelve al perfil de sonido anterior.
-- NVDA + Shift + L: Dice por voz el perfil actual, la preamplificación y los filtros que estén encendidos.
+Para no interferir con las órdenes nativas de NVDA ni con otros complementos (como Monitor del Sistema), este complemento no asigna atajos de teclado por defecto.
 
-Todos los comandos del complemento se pueden reasignar o asignar a teclas nuevas desde el menú de NVDA > Preferencias > Gestos de entrada, abriendo la categoría "Ecualizador de audio".
+Puedes abrir todas sus funciones directamente desde el menú de NVDA > Herramientas > Ecualizador de Audio, o bien asignar tus combinaciones preferidas en el menú de NVDA > Preferencias > Gestos de entrada, dentro de la categoría "Ecualizador de audio".
 
 Entre las acciones que puedes asignar se encuentran:
 - Subir y bajar graves rápidos (pasos de 1 dB).

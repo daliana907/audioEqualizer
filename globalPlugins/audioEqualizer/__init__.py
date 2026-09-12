@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Audio Equalizer para NVDA
+# Copyright (C) 2026 Daliana
+# Released under the GNU General Public License version 2 (GPLv2)
 """
 Punto de entrada del complemento para NVDA.
 Registra el esquema de configuración, inicializa el controlador
@@ -6,6 +9,10 @@ y define únicamente los comandos necesarios, evitando lógica de negocio aquí.
 """
 
 import globalPluginHandler
+try:
+    import globalVars
+except ImportError:
+    globalVars = None
 from scriptHandler import script
 import addonHandler
 import wx
@@ -40,6 +47,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         al menú Herramientas de la bandeja del sistema.
         """
         super().__init__()
+        if globalVars and getattr(globalVars.appArgs, "secureMode", False):
+            import logHandler
+            logHandler.log.warning("Audio Equalizer: NVDA en modo seguro. Se cancela la carga del complemento por seguridad.")
+            raise globalPluginHandler.ActionCancelled()
         
         # Registrar esquema en NVDA config antes de cargar o guardar parámetros
         config.init_config_spec()
@@ -58,23 +69,29 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         """
         self._tools_menu = wx.Menu()
         
-        settings_item = self._tools_menu.Append(wx.ID_ANY, _("Configuración...\tNVDA+E"))
+        # Translators: Elemento de menú para abrir la ventana de configuración del ecualizador.
+        settings_item = self._tools_menu.Append(wx.ID_ANY, _("Configuración..."))
         gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._on_settings_menu, settings_item)
         
+        # Translators: Elemento de menú para ver el registro técnico y auditoría de filtros.
         log_item = self._tools_menu.Append(wx.ID_ANY, _("Ver registro de filtros (Log)..."))
         gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._open_log, log_item)
 
+        # Translators: Elemento de menú para comprobar posibles conflictos con otros complementos.
         conflict_item = self._tools_menu.Append(wx.ID_ANY, _("Comprobar conflictos con otros complementos..."))
         gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._check_conflicts, conflict_item)
 
+        # Translators: Elemento de menú para descargar e instalar Equalizer APO.
         install_item = self._tools_menu.Append(wx.ID_ANY, _("Descargar e instalar motor de audio (Equalizer APO)..."))
         gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._install_apo, install_item)
 
+        # Translators: Elemento de menú para abrir la documentación del ecualizador.
         docs_item = self._tools_menu.Append(wx.ID_ANY, _("Ayuda"))
         gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._open_docs, docs_item)
         
         self._submenu_item = gui.mainFrame.sysTrayIcon.toolsMenu.AppendSubMenu(
             self._tools_menu, 
+            # Translators: Nombre del submenú en el menú Herramientas de NVDA.
             _("Ecualizador de Audio")
         )
 
@@ -112,9 +129,21 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             doc_path = os.path.join(addon_dir, "doc", "en", "readme.html")
         
         if os.path.exists(doc_path):
-            os.startfile(doc_path)
+            try:
+                gui.openDocumentation(doc_path)
+            except Exception as e:
+                import logHandler
+                logHandler.log.error(f"AudioEqualizer: Error al abrir documentación con gui.openDocumentation: {e}", exc_info=True)
+                # Translators: Mensaje cuando falla la apertura de la documentación del ecualizador.
+                gui.messageBox(
+                    _("No se pudo abrir la documentación: {error}").format(error=e),
+                    # Translators: Título del diálogo de error de documentación.
+                    _("Error - Ecualizador de audio"),
+                    wx.OK | wx.ICON_ERROR
+                )
         else:
             import ui
+            # Translators: Mensaje cuando no se encuentra el archivo de documentación.
             ui.message(_("La documentación no se encuentra disponible."))
 
     def terminate(self):
@@ -136,8 +165,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     # --- Comandos y Atajos de Teclado Reasignables en NVDA ---
 
     @script(
+        # Translators: Descripción del script para abrir la ventana de configuración del ecualizador.
         description=_("Abre el diálogo de configuración del ecualizador de audio."),
-        gesture="kb:NVDA+e",
         category=scriptCategory,
     )
     def script_openEqualizer(self, gesture):
@@ -145,8 +174,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self._controller.show_gui()
 
     @script(
+        # Translators: Descripción del script para conmutar el ecualizador de audio.
         description=_("Activa o desactiva rápidamente el ecualizador de audio."),
-        gesture="kb:NVDA+shift+e",
         category=scriptCategory,
     )
     def script_toggleEqualizer(self, gesture):
@@ -154,8 +183,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self._controller.toggle_equalizer()
 
     @script(
+        # Translators: Descripción del script para avanzar al siguiente perfil.
         description=_("Cambia al siguiente perfil de ecualización."),
-        gesture="kb:NVDA+control+e",
         category=scriptCategory,
     )
     def script_nextProfile(self, gesture):
@@ -163,8 +192,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self._controller.next_profile()
 
     @script(
+        # Translators: Descripción del script para retroceder al perfil anterior.
         description=_("Cambia al perfil de ecualización anterior."),
-        gesture="kb:NVDA+control+shift+e",
         category=scriptCategory,
     )
     def script_prevProfile(self, gesture):
@@ -172,8 +201,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self._controller.previous_profile()
 
     @script(
+        # Translators: Descripción del script para anunciar el estado de filtros y perfil activo.
         description=_("Anuncia por voz el estado completo del ecualizador: perfil activo, preamplificación y mejoras aplicadas."),
-        gesture="kb:NVDA+shift+l",
         category=scriptCategory,
     )
     def script_speakFilterStatus(self, gesture):
