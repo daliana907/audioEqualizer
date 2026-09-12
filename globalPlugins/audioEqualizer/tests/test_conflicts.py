@@ -72,7 +72,7 @@ class TestConflicts(unittest.TestCase):
             "kb:nvda+shift+e": DummyScript("script_toggle", "Alternar ecualizador"),
         }
 
-        other_plugin = DummyPlugin("monitorSistema")
+        other_plugin = DummyPlugin("monitoreoSistema")
         other_plugin._gestureMap = {
             "kb:nvda+shift+e": DummyScript("script_summary", "Resumen de recursos"),
         }
@@ -81,7 +81,7 @@ class TestConflicts(unittest.TestCase):
             conflicts, warnings = audit_conflicts(our_plugin)
             self.assertEqual(len(conflicts), 1)
             self.assertIn("NVDA + Shift + E", conflicts[0])
-            self.assertIn("monitorSistema", conflicts[0])
+            self.assertIn("monitoreoSistema", conflicts[0])
 
     def test_detects_dynamically_changed_gesture(self):
         our_plugin = DummyPlugin("audioEqualizer")

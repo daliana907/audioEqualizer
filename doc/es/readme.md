@@ -17,7 +17,7 @@ El ecualizador aplica los ajustes directamente a través de Equalizer APO, un mo
 
 ## Atajos de teclado y personalización
 
-Para no interferir con las órdenes nativas de NVDA ni con otros complementos (como Monitor del Sistema), este complemento no asigna atajos de teclado por defecto.
+Para no interferir con las órdenes nativas de NVDA ni con otros complementos (como Monitoreo del Sistema), este complemento no asigna atajos de teclado por defecto.
 
 Puedes abrir todas sus funciones directamente desde el menú de NVDA > Herramientas > Ecualizador de Audio, o bien asignar tus combinaciones preferidas en el menú de NVDA > Preferencias > Gestos de entrada, dentro de la categoría "Ecualizador de audio".
 

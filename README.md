@@ -30,7 +30,7 @@ Audio Equalizer es un complemento para NVDA que proporciona un ecualizador gráf
 Requiere tener instalado Equalizer APO en Windows. Si no lo tienes, el complemento te ofrece descargarlo en tu carpeta de descargas al iniciarlo por primera vez, o puedes descargarlo desde el menú Herramientas > Ecualizador de Audio.
 
 ### Atajos de teclado y personalización
-Para evitar conflictos con los comandos nativos de NVDA o con otros complementos (como Monitor del Sistema), este complemento no asigna atajos de teclado por defecto.
+Para evitar conflictos con los comandos nativos de NVDA o con otros complementos (como Monitoreo del Sistema), este complemento no asigna atajos de teclado por defecto.
 Puedes acceder a todas las funciones desde el menú NVDA > Herramientas > Ecualizador de Audio, o asignar tus atajos favoritos en el menú de NVDA > Preferencias > Gestos de entrada, en la categoría "Ecualizador de audio".
 
 ---
