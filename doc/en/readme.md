@@ -1,7 +1,7 @@
 # Audio Equalizer for NVDA
 
 Author: Daliana
-Version: 1.1.0
+Version: 1.2.0
 Compatibility: NVDA 2024.1 or later
 License: GNU GPL v2
 
@@ -38,7 +38,7 @@ Available actions include:
 
 ## Settings Dialog Overview
 
-Pressing NVDA + E opens the accessible settings window:
+Opening settings from NVDA Menu > Tools > Audio Equalizer (or via a custom shortcut assigned in Input Gestures) opens the accessible settings window:
 
 ### Sound Profiles
 Choose from tuned factory presets (Flat, Music, Studio, Movies, Gaming, Voice, Rock, Pop, Electronic, Classical, Jazz, Bass Boost, Treble Boost, Night Mode), save custom profiles, delete user profiles, or run the channel test.

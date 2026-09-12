@@ -1,7 +1,7 @@
 # Audio Equalizer para NVDA
 
 Autora: Daliana
-Versión: 1.1.0
+Versión: 1.2.0
 Compatibilidad: NVDA 2024.1 o posterior
 Licencia: GNU GPL v2
 
@@ -38,7 +38,7 @@ Entre las acciones que puedes asignar se encuentran:
 
 ## Opciones disponibles en la ventana
 
-Al pulsar NVDA + E se abre una ventana accesible organizada con los siguientes apartados:
+Al abrir la configuración desde el menú NVDA > Herramientas > Ecualizador de Audio (o con el atajo personalizado que decidas asignarle en Gestos de entrada), se abre una ventana accesible organizada con los siguientes apartados:
 
 ### Perfiles de sonido
 Puedes elegir entre varios perfiles ya preparados (Plano, Música, Estudio, Películas, Juegos, Voz y Podcasts, Rock, Pop, Electrónica, Clásica, Jazz, Refuerzo de graves, Refuerzo de agudos y Modo nocturno). Además, puedes guardar tus propios ajustes con el nombre que quieras o borrar los que ya no uses. Incluye un botón para probar los canales y verificar que tienes los auriculares bien colocados.
