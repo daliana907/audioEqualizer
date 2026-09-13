@@ -6,7 +6,7 @@
 </head>
 <body>
 <h1>Audio Equalizer para NVDA</h1>
-<p>Autora: Daliana | Versión: 1.2.0 | Compatibilidad: NVDA 2023.1 o posterior | Licencia: GNU GPL v2</p>
+<p>Autora: Daliana | Versión: 1.3.0 | Compatibilidad: NVDA 2023.1 o posterior | Licencia: GNU GPL v2</p>
 <p>Este complemento añade un ecualizador de 31 bandas para calibrar el sonido de Windows con NVDA de forma completamente accesible. Permite ajustar graves y agudos al instante, elegir o crear perfiles de sonido, corregir el balance de auriculares y aplicar filtros para mejorar la claridad de la voz del lector de pantalla o descansar el oído en sesiones largas.</p>
 
 <h2>Requisitos y funcionamiento</h2>
@@ -27,9 +27,16 @@
 <li>Preamplificación y control de ganancia: deslizador de ganancia general y casilla de preamplificación automática para evitar saturación digital.</li>
 <li>Balance y opciones estéreo: modo mono, inversión de canales, ajuste de balance entre izquierda y derecha y amplitud de la imagen estéreo.</li>
 <li>Controles rápidos de tono: teclas y controles directos para subir o bajar graves y agudos al momento.</li>
-<li>Filtros acústicos para auriculares: compensación Loudness a bajo volumen, claridad para la voz de NVDA, presencia vocal, filtros contra sibilancias, fatiga auditiva, sonido hueco y zumbidos eléctricos.</li>
+<li>Filtros acústicos para auriculares: compensación Loudness a bajo volumen, claridad para la voz de NVDA, presencia vocal, filtros contra sibilancias, fatiga auditiva y zumbidos eléctricos.</li>
 <li>Ecualizador de 31 bandas: controles independientes desde 20 Hz hasta 20 kHz entre -12 dB y +12 dB.</li>
 <li>Herramientas y diagnóstico: visualización del registro de operaciones y comprobación de posibles conflictos de atajos con otros complementos.</li>
+</ul>
+
+<h2>Novedades de la versión 1.3.0 (13 de septiembre de 2026)</h2>
+<ul>
+<li>Se corrigió la orden que amplía el campo estéreo para asegurar que el motor de sonido siempre acepte los valores superiores al 100 % sin fallar.</li>
+<li>La protección automática contra distorsión (preamp) ahora calcula la suma de refuerzos graves y agudos combinados para evitar saturaciones y chasquidos en la tarjeta de sonido.</li>
+<li>Al retocar una frecuencia en un perfil guardado propio, la ventana mantiene activo tu perfil en lugar de saltar al perfil genérico.</li>
 </ul>
 </body>
 </html>

@@ -1,7 +1,7 @@
 # Audio Equalizer for NVDA
 
 Author: Daliana
-Version: 1.2.0
+Version: 1.3.0
 Compatibility: NVDA 2023.1 or later
 License: GNU GPL v2
 
@@ -50,7 +50,7 @@ Manual preamp slider from -20 dB to 0 dB, plus an automatic preamp toggle that p
 Mono toggle, channel swap (L/R), smooth balance adjustment, and stereo width slider from 0% to 200%.
 
 ### Headphone and Vocal Filters
-Optional filters including low-volume Loudness compensation, NVDA voice optimization, vocal presence, anti-sibilance, anti-fatigue, anti-boxiness, ground hum notch, sub-bass boost, and subsonic high-pass filter.
+Optional filters including low-volume Loudness compensation, NVDA voice optimization, vocal presence, anti-sibilance, anti-fatigue, ground hum notch, sub-bass boost, and subsonic high-pass filter.
 
 ### 31-Band Equalizer
 Thirty-one sliders covering 20 Hz to 20 kHz in 1/3-octave steps with a -12 dB to +12 dB range.
@@ -58,3 +58,9 @@ Thirty-one sliders covering 20 Hz to 20 kHz in 1/3-octave steps with a -12 dB to
 ### Tools and Diagnostics
 - View Log button to inspect real-time Equalizer APO commands.
 - Conflict detection tool in the NVDA Tools menu.
+
+## What's new in 1.3.0 (13 September 2026)
+
+- Fixed the stereo width expansion directive so the audio engine always accepts values above 100% without syntax errors.
+- Improved automatic anti-clipping protection (auto preamp) to account for overlapping bass/treble boosts and stereo expansion, preventing digital distortion.
+- Tweaking a frequency band on a saved custom profile now keeps that profile selected instead of jumping to Custom.

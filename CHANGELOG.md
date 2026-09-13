@@ -1,5 +1,19 @@
 # Registro de cambios / Changelog
 
+## Versión 1.3.0 (13 de septiembre de 2026)
+
+### Español
+- Se corrigió la orden que ensancha el sonido estéreo para que el motor de audio siempre acepte los valores superiores al 100 % sin fallar.
+- La protección automática contra distorsión (preamp) ahora calcula la suma de refuerzos graves y agudos combinados para evitar saturaciones y chasquidos en la tarjeta de sonido.
+- Al retocar una frecuencia en un perfil guardado propio, el selector mantiene tu perfil seleccionado en vez de saltar al perfil genérico.
+
+### English
+- Fixed the stereo width expansion directive so the audio engine always accepts values above 100% without syntax errors.
+- Improved automatic anti-clipping protection (auto preamp) to account for overlapping bass/treble boosts and stereo expansion, preventing digital distortion.
+- Tweaking a frequency band on a saved custom profile now keeps that profile selected instead of jumping to Custom.
+
+---
+
 ## Versión 1.1.0 (12 de septiembre de 2026)
 
 ### Novedades

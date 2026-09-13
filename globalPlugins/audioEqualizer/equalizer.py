@@ -79,19 +79,33 @@ class EqualizerController:
             log.debug(f"AudioEqualizer: Sincronizando backend (enabled={profile.enabled}).")
             effective_preamp = profile.preamp
             if profile.auto_preamp:
-                # Recolectamos todas las ganancias positivas para prevenir distorsión digital
-                boosts = [0.0] + profile.gains + [max(0.0, profile.tone_bass), max(0.0, profile.tone_treble)]
+                # Recolectamos ganancias acústicas sumando filtros concurrentes para evitar saturación digital
+                bass_band = max(0.0, profile.gains[7] if len(profile.gains) > 7 else 0.0)
+                bass_boost = max(0.0, profile.tone_bass) + bass_band
                 if profile.sub_bass:
-                    boosts.append(6.0)
-                if profile.clarity:
-                    boosts.append(5.5)
-                if profile.nvda_voice:
-                    boosts.append(4.5)
+                    bass_boost += 6.0
                 if profile.loudness:
-                    boosts.append(4.5)
-                peak_gain = max(boosts)
-                # La preamplificación se establece en el negativo del pico más alto
-                effective_preamp = -peak_gain
+                    bass_boost += 4.5
+
+                treble_band = max(0.0, profile.gains[25] if len(profile.gains) > 25 else 0.0)
+                treble_boost = max(0.0, profile.tone_treble) + treble_band
+                if profile.clarity:
+                    treble_boost += 5.5
+                if profile.loudness:
+                    treble_boost += 3.0
+
+                stereo_gain = 0.0
+                if profile.stereo_width > 100:
+                    import math
+                    w = profile.stereo_width / 100.0
+                    stereo_gain = round(20.0 * math.log10(0.5 * (1.0 + w)), 2)
+
+                isolated_boosts = [0.0] + profile.gains + [max(0.0, profile.tone_bass), max(0.0, profile.tone_treble)]
+                if profile.nvda_voice:
+                    isolated_boosts.append(4.5)
+
+                peak_gain = max(max(isolated_boosts), bass_boost, treble_boost) + stereo_gain
+                effective_preamp = -round(peak_gain, 1)
                 
             self._backend.update(
                 enabled=profile.enabled,

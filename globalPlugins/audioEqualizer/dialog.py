@@ -526,8 +526,10 @@ class EqualizerDialog(wx.Dialog):
     def _on_band_slider_scroll(self, event, slider, f_txt):
         val = slider.GetValue()
         slider.SetName(f"{f_txt}, ganancia, {val} decibelios")
-        self._profile_choice.SetSelection(profiles.CUSTOM_INDEX)
-        self._update_profile_buttons_state()
+        sel = self._profile_choice.GetSelection()
+        if sel < profiles.CUSTOM_INDEX:
+            self._profile_choice.SetSelection(profiles.CUSTOM_INDEX)
+            self._update_profile_buttons_state()
         self._on_apply(event)
         event.Skip()
 

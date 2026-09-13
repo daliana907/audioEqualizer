@@ -287,8 +287,9 @@ class ApoBackend(AudioBackend):
                 w = self._stereo_width / 100.0
                 cL = round(0.5 * (1.0 + w), 3)
                 cR = round(0.5 * (1.0 - w), 3)
+                cR_sign = "+" if cR >= 0 else ""
                 lines.append(f"# Ancho estereo Mid/Side ({self._stereo_width}%)")
-                lines.append(f"Copy: L={cL}*L+{cR}*R R={cR}*L+{cL}*R")
+                lines.append(f"Copy: L={cL}*L{cR_sign}{cR}*R R={cR}*L+{cL}*R")
 
             # 2. Balance Estéreo (-100 a +100): exclusivamente por atenuación suave del canal opuesto
             if self._balance < 0:

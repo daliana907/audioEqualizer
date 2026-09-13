@@ -1,7 +1,7 @@
 # Audio Equalizer para NVDA
 
 Autora: Daliana
-Versión: 1.2.0
+Versión: 1.3.0
 Compatibilidad: NVDA 2023.1 en adelante
 Licencia: GNU GPL v2
 
@@ -54,7 +54,7 @@ Casillas opcionales pensadas para el uso con auriculares o sintetizadores de voz
 - Modo Loudness para compensar la pérdida de graves y agudos cuando escuchas a poco volumen.
 - Claridad para la voz de NVDA y realce de presencia vocal para que el lector de pantalla y las conversaciones se entiendan con nitidez.
 - Filtro anti-sibilancia para suavizar las eses molestas y filtro anti-fatiga auditiva para reducir el cansancio en los oídos.
-- Filtro contra sonido hueco o encajonado y filtro contra zumbidos eléctricos de red (50 y 60 Hz).
+- Filtro contra zumbidos eléctricos de red (50 y 60 Hz).
 - Refuerzo de subgraves profundos y corte subsónico para limpiar frecuencias inaudibles.
 
 ### Ecualizador de 31 bandas
@@ -63,3 +63,9 @@ Treinta y un deslizadores accesibles desde 20 Hz hasta 20 kHz para ajustar cada 
 ### Herramientas y diagnóstico
 - Botón Ver registro: muestra los cambios técnicos aplicados en Equalizer APO para comprobar que el motor está respondiendo.
 - Detección de conflictos: disponible en el menú de Herramientas de NVDA para avisarte si algún atajo configurado coincide con otro complemento.
+
+## Novedades de la versión 1.3.0 (13 de septiembre de 2026)
+
+- Se corrigió la orden que amplía el campo estéreo para asegurar que el motor de sonido siempre acepte los valores superiores al 100 % sin fallar.
+- La protección automática contra distorsión (preamp) ahora calcula la suma de refuerzos graves y agudos combinados para evitar saturaciones y chasquidos en la tarjeta de sonido.
+- Al retocar una frecuencia en un perfil guardado propio, la ventana mantiene activo tu perfil en lugar de saltar al perfil genérico.

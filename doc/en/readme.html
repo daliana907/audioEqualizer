@@ -6,7 +6,7 @@
 </head>
 <body>
 <h1>Audio Equalizer for NVDA</h1>
-<p>Author: Daliana | Version: 1.2.0 | Compatibility: NVDA 2023.1 or later | License: GNU GPL v2</p>
+<p>Author: Daliana | Version: 1.3.0 | Compatibility: NVDA 2023.1 or later | License: GNU GPL v2</p>
 <p>This add-on provides a fully accessible 31-band graphic equalizer for NVDA on Windows. It lets you quickly adjust bass and treble, switch sound profiles, correct stereo balance, and apply acoustic filters for headphones and screen reader clarity.</p>
 
 <h2>Requirements and Setup</h2>
@@ -30,6 +30,13 @@
 <li>Headphone acoustic filters for speech clarity, anti-fatigue, anti-sibilance, and ground hum suppression.</li>
 <li>31 standard ISO frequency bands from 20 Hz to 20 kHz.</li>
 <li>Diagnostic log viewer and add-on shortcut conflict detection.</li>
+</ul>
+
+<h2>What's new in 1.3.0 (13 September 2026)</h2>
+<ul>
+<li>Fixed the stereo width expansion directive so the audio engine always accepts values above 100% without syntax errors.</li>
+<li>Improved automatic anti-clipping protection (auto preamp) to account for overlapping bass/treble boosts and stereo expansion, preventing digital distortion.</li>
+<li>Tweaking a frequency band on a saved custom profile now keeps that profile selected instead of jumping to Custom.</li>
 </ul>
 </body>
 </html>
