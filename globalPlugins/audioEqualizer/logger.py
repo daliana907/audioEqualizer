@@ -223,6 +223,14 @@ def log_error(
     # Registrar de forma persistente en audioEqualizer.log
     try:
         os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
+        if os.path.exists(LOG_FILE_PATH) and os.path.getsize(LOG_FILE_PATH) > 1024 * 1024:
+            try:
+                old_log = LOG_FILE_PATH + ".old"
+                if os.path.exists(old_log):
+                    os.remove(old_log)
+                os.rename(LOG_FILE_PATH, old_log)
+            except Exception:
+                pass
         with open(LOG_FILE_PATH, "a", encoding="utf-8") as f:
             f.write("\n".join(err_lines) + "\n")
     except Exception as io_err:
