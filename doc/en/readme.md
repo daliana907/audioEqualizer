@@ -2,7 +2,7 @@
 
 Author: Daliana
 Version: 1.2.0
-Compatibility: NVDA 2024.1 or later
+Compatibility: NVDA 2023.1 or later
 License: GNU GPL v2
 
 This add-on provides a fully accessible 31-band graphic equalizer for NVDA on Windows. It lets you quickly adjust bass and treble on the fly, choose or create custom sound profiles, adjust stereo balance, and apply acoustic filters designed for headphones and screen reader voice clarity.

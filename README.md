@@ -4,7 +4,7 @@
 
 Autora: Daliana  
 Versión: 1.2.0  
-Compatibilidad: NVDA 2024.1 o posterior  
+Compatibilidad: NVDA 2023.1 en adelante  
 Licencia: GNU GPL v2  
 
 [Descargar última versión / Download latest (.nvda-addon)](https://github.com/daliana907/audioEqualizer/releases/latest/download/audioEqualizer-1.2.0.nvda-addon) · [Registro de cambios](CHANGELOG.md)

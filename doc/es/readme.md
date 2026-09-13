@@ -2,7 +2,7 @@
 
 Autora: Daliana
 Versión: 1.2.0
-Compatibilidad: NVDA 2024.1 o posterior
+Compatibilidad: NVDA 2023.1 en adelante
 Licencia: GNU GPL v2
 
 Este complemento añade un ecualizador de 31 bandas para calibrar el sonido de Windows con NVDA de forma completamente accesible. Puedes ajustar graves y agudos al instante, elegir o crear perfiles de sonido, corregir el balance de auriculares y aplicar filtros para mejorar la claridad de la voz del lector de pantalla o descansar el oído en sesiones largas.
