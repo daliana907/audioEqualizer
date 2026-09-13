@@ -3,14 +3,18 @@
 ## Versión 1.3.0 (13 de septiembre de 2026)
 
 ### Español
-- Se corrigió la orden que ensancha el sonido estéreo para que el motor de audio siempre acepte los valores superiores al 100 % sin fallar.
-- La protección automática contra distorsión (preamp) ahora calcula la suma de refuerzos graves y agudos combinados para evitar saturaciones y chasquidos en la tarjeta de sonido.
-- Al retocar una frecuencia en un perfil guardado propio, el selector mantiene tu perfil seleccionado en vez de saltar al perfil genérico.
+- Corrección en el ensanchamiento estéreo: al superar el 100 %, el audio ahora se expande equilibradamente en ambos auriculares sin perder el canal izquierdo.
+- Protección automática contra distorsión y saturación digital (preamp automático) mediante cálculo combinado de refuerzos en graves y agudos.
+- Al retocar una frecuencia en un perfil personalizado propio, el selector mantiene tu perfil activo en lugar de saltar al genérico.
+- Mayor estabilidad al guardar o eliminar perfiles acústicos y limpieza completa de archivos temporales al desinstalar.
+- Mejoras generales de rendimiento, manejo de memoria y robustez en la comunicación con el motor de audio.
 
 ### English
-- Fixed the stereo width expansion directive so the audio engine always accepts values above 100% without syntax errors.
-- Improved automatic anti-clipping protection (auto preamp) to account for overlapping bass/treble boosts and stereo expansion, preventing digital distortion.
+- Fixed stereo width expansion above 100%: audio now expands evenly across both earphones without dropping or muting the left channel.
+- Improved automatic anti-clipping protection (auto preamp) by calculating combined bass and treble boosts to prevent digital distortion.
 - Tweaking a frequency band on a saved custom profile now keeps that profile selected instead of jumping to Custom.
+- Enhanced reliability when saving or deleting custom acoustic profiles, ensuring data integrity.
+- General performance improvements, cleanup of temporary files, and optimized communication with the audio engine.
 
 ---
 
