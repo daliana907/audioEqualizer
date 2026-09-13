@@ -230,41 +230,8 @@ class ApoBackend(AudioBackend):
                 pass
             raise RuntimeError(f"Fallo de E/S al configurar Equalizer APO: {e}")
 
-    def _flush_to_disk(self) -> None:
-        """Escribe todos los comandos de procesamiento de audio en 'nvda_equalizer.txt'.
-
-        Construye el archivo línea por línea usando exclusivamente comandos nativos
-        de Equalizer APO en el orden acústico óptimo:
-        1. Enrutamiento de canales: inversión L/R, mezcla mono (L=0.5*L+0.5*R), o
-           ensanchamiento estéreo mediante matriz Mid/Side (L=cL*L+cR*R) que amplía la escena
-           sonora sin introducir desfases ni colorear el timbre.
-        2. Balance estéreo (-100 a +100): atenúa suavemente el canal opuesto hasta un máximo
-           de -20 dB. Atenuar en lugar de amplificar evita la saturación digital en el DAC.
-        3. Preamplificación segura: ajusta el nivel global en decibelios para evitar clíping.
-        4. Controles rápidos de tono: filtros de estantería suave para graves (100 Hz) y agudos (8000 Hz).
-        5. Filtros acústicos especializados para auriculares:
-           - Subsónico: filtro paso-alto en 20 Hz (Butterworth Q=0.707) para eliminar oscilaciones inaudibles.
-           - Subgraves: realce de pegada en 70 Hz (+6 dB) para compensar la falta de cuerpo en auriculares abiertos.
-           - Anti-caja: corte en 400 Hz (-4.5 dB) para eliminar el sonido hueco y nasal.
-           - Claridad vocal: realce en 5500 Hz (+5.5 dB) que resalta detalles y presencia en la voz humana.
-           - Anti-sibilancia: filtro paramétrico en 7500 Hz (-5.0 dB) que suaviza los molestos sonidos de 's' y 'ch'.
-           - Anti-fatiga auditiva: corte suave en agudos extremos en 14000 Hz (-4.5 dB) para sesiones prolongadas.
-           - Anti-zumbido eléctrico: dos filtros notch muy estrechos en 50 Hz y 60 Hz para ruidos de masa.
-           - Compensación isofónica (Loudness): curvas de Fletcher-Munson (+4.5 dB en 80 Hz y +3 dB en 9 kHz)
-             para escuchar música o voz a bajo volumen sin perder graves ni brillo.
-           - Voz de NVDA: ecualización de tres bandas diseñada específicamente para sintetizadores
-             de voz (-3.5 dB en 850 Hz para quitar resonancia plástica, +4.5 dB en 2800 Hz para inteligibilidad
-             y -3.0 dB en 6200 Hz para suavizar fricativas digitales).
-        6. Ecualizador gráfico de 31 bandas ISO estándar mediante la directiva 'GraphicEQ'.
-
-        El archivo se escribe de forma atómica y gestiona hasta 10 reintentos si el proceso de
-        audio de Windows (audiodg.exe) lo mantiene temporalmente bloqueado mientras reproduce sonido.
-        """
-        if not self.is_available():
-            raise RuntimeError("Equalizer APO no está disponible en este sistema.")
-
-        self._ensure_include_directive()
-
+    def _build_config_lines(self) -> List[str]:
+        """Genera la lista de líneas de directivas de Equalizer APO según el estado actual."""
         lines = [
             "# Archivo de configuracion del complemento Audio Equalizer para NVDA",
             "# Generado automaticamente con comandos nativos de Equalizer APO.",
@@ -287,9 +254,8 @@ class ApoBackend(AudioBackend):
                 w = self._stereo_width / 100.0
                 cL = round(0.5 * (1.0 + w), 3)
                 cR = round(0.5 * (1.0 - w), 3)
-                cR_sign = "+" if cR >= 0 else ""
                 lines.append(f"# Ancho estereo Mid/Side ({self._stereo_width}%)")
-                lines.append(f"Copy: L={cL}*L{cR_sign}{cR}*R R={cR}*L+{cL}*R")
+                lines.append(f"Copy: L={cL}*L+{cR}*R R={cR}*L+{cL}*R")
 
             # 2. Balance Estéreo (-100 a +100): exclusivamente por atenuación suave del canal opuesto
             if self._balance < 0:
@@ -346,6 +312,15 @@ class ApoBackend(AudioBackend):
             for freq, gain in zip(constants.EQ_BANDS, self._gains):
                 pairs.append(f"{freq} {gain:.1f}")
             lines.append(f"GraphicEQ: {'; '.join(pairs)}")
+        return lines
+
+    def _flush_to_disk(self) -> None:
+        """Escribe todos los comandos de procesamiento de audio en 'nvda_equalizer.txt'."""
+        if not self.is_available():
+            raise RuntimeError("Equalizer APO no está disponible en este sistema.")
+
+        self._ensure_include_directive()
+        lines = self._build_config_lines()
 
         try:
             content = "\n".join(lines) + "\n"

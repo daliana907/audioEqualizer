@@ -130,5 +130,33 @@ class TestEqualizerController(unittest.TestCase):
         self.controller.adjust_tone_treble(-2.0)
         self.assertAlmostEqual(self.controller._current_profile.tone_treble, -2.0)
 
+
+class TestStereoWidthApoFormatting(unittest.TestCase):
+
+    def test_stereo_width_greater_than_100_has_valid_plus_separator(self):
+        from audioEqualizer.apo_backend import ApoBackend
+        backend = ApoBackend()
+        backend._enabled = True
+        backend._stereo_width = 150
+        lines = backend._build_config_lines()
+        copy_line = next((l for l in lines if l.startswith("Copy: L=")), None)
+        self.assertIsNotNone(copy_line)
+        # Debe contener el separador '+' antes del coeficiente negativo de R para que Equalizer APO lo parsee
+        self.assertIn("*L+", copy_line)
+        self.assertIn("L=1.25*L+-0.25*R", copy_line)
+        self.assertIn("R=-0.25*L+1.25*R", copy_line)
+
+    def test_stereo_width_less_than_100_has_valid_plus_separator(self):
+        from audioEqualizer.apo_backend import ApoBackend
+        backend = ApoBackend()
+        backend._enabled = True
+        backend._stereo_width = 50
+        lines = backend._build_config_lines()
+        copy_line = next((l for l in lines if l.startswith("Copy: L=")), None)
+        self.assertIsNotNone(copy_line)
+        self.assertIn("L=0.75*L+0.25*R", copy_line)
+        self.assertIn("R=0.25*L+0.75*R", copy_line)
+
+
 if __name__ == "__main__":
     unittest.main()
