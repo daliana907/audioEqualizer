@@ -12,24 +12,31 @@ from .backend import AudioBackend
 
 
 class DummyBackend(AudioBackend):
+    """Backend simulado en memoria para entornos de pruebas automatizadas o sin Equalizer APO instalado."""
+
     def __init__(self):
         self._enabled = False
         self._gains = [0.0] * 31
         self._preamp = 0.0
 
     def is_available(self) -> bool:
+        """El backend simulado siempre se reporta como disponible."""
         return True
 
     def get_enabled(self) -> bool:
+        """Devuelve el estado de activación en memoria."""
         return self._enabled
 
     def set_enabled(self, enabled: bool) -> None:
+        """Actualiza el estado de activación en memoria."""
         self._enabled = enabled
 
     def get_gains(self) -> List[float]:
+        """Devuelve la lista actual de ganancias en memoria."""
         return self._gains
 
     def set_gains(self, gains: List[float], preamp: float) -> None:
+        """Guarda las ganancias y el nivel de preamplificación en memoria."""
         self._gains = list(gains)
         self._preamp = preamp
 
@@ -54,6 +61,7 @@ class DummyBackend(AudioBackend):
         nvda_voice: bool = False,
         stereo_width: int = 100,
     ) -> None:
+        """Almacena el estado completo de ecualización y procesamiento en memoria."""
         self._enabled = enabled
         self._gains = list(gains)
         self._preamp = preamp
@@ -74,4 +82,5 @@ class DummyBackend(AudioBackend):
         self.stereo_width = stereo_width
 
     def close(self) -> None:
+        """No requiere liberación de recursos externos al ser una simulación en memoria."""
         pass

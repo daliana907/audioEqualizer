@@ -55,6 +55,7 @@ def write_audit_log(
     apo_config_path: str = "",
     apo_include_ok: bool = True
 ) -> None:
+    """Registra en audioEqualizer.log el volcado detallado de parámetros, ganancias y sintaxis generada para Equalizer APO."""
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     sep = "=" * 70
     subsep = "-" * 70

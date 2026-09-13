@@ -40,6 +40,7 @@ except ImportError:
     class _UIFallback:
         @staticmethod
         def message(msg):
+            """Emite un mensaje informativo o actúa como no-op en entornos de prueba."""
             pass
     ui = _UIFallback()
 

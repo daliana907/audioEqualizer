@@ -28,6 +28,7 @@ except ImportError:
     class _FallbackUI:
         @staticmethod
         def message(msg):
+            """Imprime en consola el mensaje cuando se ejecuta fuera del entorno de NVDA."""
             print(f"[UI MESSAGE]: {msg}")
     ui = _FallbackUI()
 
@@ -197,6 +198,7 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
         self.CenterOnScreen()
 
     def start(self):
+        """Inicia el subproceso de descarga en segundo plano y muestra la ventana modal con la barra de progreso."""
         self._download_thread = threading.Thread(target=self._download_worker, daemon=True)
         self._download_thread.start()
         self.ShowModal()
@@ -364,6 +366,7 @@ def start_apo_download_flow(parent=None):
 
     # 3. Callback al terminar la descarga
     def on_download_finished(success: bool, error_msg: str, final_path: str):
+        """Callback ejecutado al finalizar la descarga para informar el resultado o ejecutar el instalador."""
         if not success:
             if error_msg and "cancelada" not in error_msg.lower():
                 wx.MessageBox(

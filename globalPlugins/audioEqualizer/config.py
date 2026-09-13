@@ -103,6 +103,7 @@ class EqualizerProfile:
         
     @profile_index.setter
     def profile_index(self, value: int) -> None:
+        """Asigna el índice del perfil activo garantizando valor entero no negativo."""
         try:
             self._profile_index = int(value)
         except (ValueError, TypeError):
@@ -115,6 +116,7 @@ class EqualizerProfile:
 
     @enabled.setter
     def enabled(self, value: bool) -> None:
+        """Modifica el estado de activación booleano."""
         if not isinstance(value, bool):
             raise TypeError("Enabled debe ser booleano.")
         self._enabled = value
@@ -126,6 +128,7 @@ class EqualizerProfile:
 
     @preamp.setter
     def preamp(self, value: float) -> None:
+        """Ajusta el nivel de preamplificación validando los límites acústicos permitidos."""
         try:
             val = float(value)
         except (ValueError, TypeError):

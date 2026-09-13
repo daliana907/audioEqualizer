@@ -506,33 +506,43 @@ class EqualizerController:
         ui.message(f"{label_name} {estado}")
 
     def toggle_mono(self) -> None:
+        """Alterna el modo mono sumando ambos canales acústicos."""
         self._toggle_feature("mono", "Modo mono")
 
     def toggle_swap_channels(self) -> None:
+        """Alterna la inversión de canales izquierdo y derecho."""
         self._toggle_feature("swap_channels", "Inversión de canales")
 
     def toggle_loudness(self) -> None:
+        """Alterna la compensación isofónica fisiológica a bajo volumen."""
         self._toggle_feature("loudness", "Loudness isofónico")
 
     def toggle_nvda_voice(self) -> None:
+        """Alterna el realce específico de inteligibilidad para sintetizadores de voz."""
         self._toggle_feature("nvda_voice", "Claridad para voz de NVDA")
 
     def toggle_clarity(self) -> None:
+        """Alterna el realce de presencia y claridad vocal general."""
         self._toggle_feature("clarity", "Realce de claridad vocal")
 
     def toggle_anti_sibilance(self) -> None:
+        """Alterna el filtro de atenuación de sibilancias y asperezas en agudos."""
         self._toggle_feature("anti_sibilance", "Filtro anti-sibilancia")
 
     def toggle_anti_fatigue(self) -> None:
+        """Alterna el filtro acústico relajante contra la fatiga auditiva prolongada."""
         self._toggle_feature("anti_fatigue", "Filtro anti-fatiga auditiva")
 
     def toggle_subsonic(self) -> None:
+        """Alterna el filtro pasaaltos contra frecuencias inaudibles y vibraciones subsónicas."""
         self._toggle_feature("subsonic", "Filtro subsónico")
 
     def toggle_sub_bass(self) -> None:
+        """Alterna el realce de frecuencias graves profundas subgraves."""
         self._toggle_feature("sub_bass", "Extensión de subgraves")
 
     def toggle_ground_hum(self) -> None:
+        """Alterna los filtros notch contra bucles de masa y zumbidos eléctricos a 50/60 Hz."""
         self._toggle_feature("ground_hum", "Filtro anti-zumbido eléctrico")
 
     def reset_to_flat(self) -> None:
