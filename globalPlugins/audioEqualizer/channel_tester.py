@@ -86,8 +86,9 @@ def generate_channel_test_wav(sample_rate: int = 44100) -> str:
         + _generate_segment([523.25, 659.25], center_dur, pan_l=1.0, pan_r=1.0)
     )
 
+    tmp_path = _TEST_WAV_PATH + ".tmp"
     try:
-        with wave.open(_TEST_WAV_PATH, "wb") as wf:
+        with wave.open(tmp_path, "wb") as wf:
             wf.setnchannels(2)
             wf.setsampwidth(2)
             wf.setframerate(sample_rate)
@@ -95,8 +96,14 @@ def generate_channel_test_wav(sample_rate: int = 44100) -> str:
             for sl, sr in all_samples:
                 packed_frames.extend(struct.pack("<hh", sl, sr))
             wf.writeframes(packed_frames)
+        os.replace(tmp_path, _TEST_WAV_PATH)
     except Exception as e:
         log.error(f"AudioEqualizer: Error al generar WAV de prueba en {_TEST_WAV_PATH}: {e}", exc_info=True)
+        try:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        except Exception:
+            pass
         try:
             from . import logger
             logger.log_error(f"Error generando archivo WAV temporal: {e}", exc=e, component="ChannelTester", context={"path": _TEST_WAV_PATH})
@@ -120,7 +127,7 @@ def play_channel_test() -> None:
 
     def _worker():
         try:
-            if not os.path.exists(_TEST_WAV_PATH):
+            if not os.path.exists(_TEST_WAV_PATH) or os.path.getsize(_TEST_WAV_PATH) == 0:
                 generate_channel_test_wav()
             winsound.PlaySound(_TEST_WAV_PATH, winsound.SND_FILENAME | winsound.SND_ASYNC)
         except Exception as e:
