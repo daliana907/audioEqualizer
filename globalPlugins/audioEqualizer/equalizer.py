@@ -139,16 +139,16 @@ class EqualizerController:
             if notify_user:
                 ui.message(f"Error en parámetros del ecualizador: {ve}")
             return False
-        except RuntimeError as re:
-            log.error(f"AudioEqualizer: Fallo en el motor: {re}", exc_info=True)
+        except RuntimeError as err:
+            log.error(f"AudioEqualizer: Fallo en el motor: {err}", exc_info=True)
             try:
                 from . import logger
                 ctx = {"profile_index": profile.profile_index, "enabled": profile.enabled}
-                logger.log_error(f"Fallo en el motor de audio Equalizer APO: {re}", exc=re, component="EqualizerController", context=ctx)
+                logger.log_error(f"Fallo en el motor de audio Equalizer APO: {err}", exc=err, component="EqualizerController", context=ctx)
             except Exception:
                 pass
             if notify_user:
-                ui.message(f"Fallo al aplicar ecualización en el sistema: {re}")
+                ui.message(f"Fallo al aplicar ecualización en el sistema: {err}")
             return False
         except Exception as e:
             log.error(f"AudioEqualizer: Error inesperado en el backend: {e}", exc_info=True)
