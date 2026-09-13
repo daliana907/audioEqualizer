@@ -63,7 +63,6 @@ class EqualizerProfile:
         tone_bass: float = constants.DEFAULT_TONE_BASS,
         tone_treble: float = constants.DEFAULT_TONE_TREBLE,
         sub_bass: bool = constants.DEFAULT_SUB_BASS,
-        anti_box: bool = constants.DEFAULT_ANTI_BOX,
         clarity: bool = constants.DEFAULT_CLARITY,
         anti_sibilance: bool = constants.DEFAULT_ANTI_SIBILANCE,
         anti_fatigue: bool = constants.DEFAULT_ANTI_FATIGUE,
@@ -84,7 +83,6 @@ class EqualizerProfile:
         self.tone_bass = float(tone_bass)
         self.tone_treble = float(tone_treble)
         self.sub_bass = bool(sub_bass)
-        self.anti_box = bool(anti_box)
         self.clarity = bool(clarity)
         self.anti_sibilance = bool(anti_sibilance)
         self.anti_fatigue = bool(anti_fatigue)
@@ -177,7 +175,6 @@ class EqualizerProfile:
             tone_bass=self.tone_bass,
             tone_treble=self.tone_treble,
             sub_bass=self.sub_bass,
-            anti_box=self.anti_box,
             clarity=self.clarity,
             anti_sibilance=self.anti_sibilance,
             anti_fatigue=self.anti_fatigue,
@@ -208,7 +205,6 @@ def get_default_profile() -> EqualizerProfile:
         tone_bass=constants.DEFAULT_TONE_BASS,
         tone_treble=constants.DEFAULT_TONE_TREBLE,
         sub_bass=constants.DEFAULT_SUB_BASS,
-        anti_box=constants.DEFAULT_ANTI_BOX,
         clarity=constants.DEFAULT_CLARITY,
         anti_sibilance=constants.DEFAULT_ANTI_SIBILANCE,
         anti_fatigue=constants.DEFAULT_ANTI_FATIGUE,
@@ -241,7 +237,6 @@ def init_config_spec():
         "tone_bass": f"float(default={constants.DEFAULT_TONE_BASS})",
         "tone_treble": f"float(default={constants.DEFAULT_TONE_TREBLE})",
         "sub_bass": "boolean(default=False)",
-        "anti_box": "boolean(default=False)",
         "clarity": "boolean(default=False)",
         "anti_sibilance": "boolean(default=False)",
         "anti_fatigue": "boolean(default=False)",
@@ -279,7 +274,6 @@ def load_profile() -> EqualizerProfile:
             tone_bass=float(c.get("tone_bass", constants.DEFAULT_TONE_BASS)),
             tone_treble=float(c.get("tone_treble", constants.DEFAULT_TONE_TREBLE)),
             sub_bass=c.get("sub_bass", False),
-            anti_box=c.get("anti_box", False),
             clarity=c.get("clarity", False),
             anti_sibilance=c.get("anti_sibilance", False),
             anti_fatigue=c.get("anti_fatigue", False),
@@ -318,7 +312,6 @@ def save_profile(profile: EqualizerProfile) -> None:
         c["tone_bass"] = profile.tone_bass
         c["tone_treble"] = profile.tone_treble
         c["sub_bass"] = profile.sub_bass
-        c["anti_box"] = profile.anti_box
         c["clarity"] = profile.clarity
         c["anti_sibilance"] = profile.anti_sibilance
         c["anti_fatigue"] = profile.anti_fatigue
@@ -379,7 +372,6 @@ def save_user_profile(name: str, profile: EqualizerProfile) -> bool:
         "tone_bass": profile.tone_bass,
         "tone_treble": profile.tone_treble,
         "sub_bass": profile.sub_bass,
-        "anti_box": profile.anti_box,
         "clarity": profile.clarity,
         "anti_sibilance": profile.anti_sibilance,
         "anti_fatigue": profile.anti_fatigue,

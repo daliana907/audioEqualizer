@@ -18,9 +18,6 @@ msgstr ""
 msgid "Abre el diálogo de configuración del ecualizador de audio."
 msgstr "Opens the audio equalizer configuration dialog."
 
-msgid "Activa o desactiva el filtro anti-encajonamiento (400 Hz)."
-msgstr "Toggles the boxiness reduction filter (400 Hz)."
-
 msgid "Activa o desactiva el filtro anti-sibilancia para suavizar el seseo."
 msgstr "Toggles the de-essing filter to soften sibilance."
 

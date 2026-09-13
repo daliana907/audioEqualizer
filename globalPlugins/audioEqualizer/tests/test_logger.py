@@ -53,7 +53,6 @@ class TestLoggerDiagnostics(unittest.TestCase):
             tone_bass=1.5,
             tone_treble=-1.0,
             sub_bass=True,
-            anti_box=True,
             clarity=True,
             anti_sibilance=True,
             anti_fatigue=True,

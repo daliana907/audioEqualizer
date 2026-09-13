@@ -31,7 +31,7 @@ Available actions include:
 - Toggle mono mode and channel swap (L/R).
 - Toggle loudness compensation.
 - Toggle NVDA voice clarity and vocal presence boost.
-- Toggle headphone acoustic filters: anti-fatigue, anti-sibilance, anti-boxiness, sub-bass, subsonic, and ground hum notch.
+- Toggle headphone acoustic filters: anti-fatigue, anti-sibilance, sub-bass, subsonic, and ground hum notch.
 - Channel orientation listening test.
 - Reset equalizer to flat (0 dB).
 - Check for shortcut conflicts with other add-ons.

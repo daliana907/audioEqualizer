@@ -105,7 +105,6 @@ class EqualizerController:
                 tone_bass=profile.tone_bass,
                 tone_treble=profile.tone_treble,
                 sub_bass=profile.sub_bass,
-                anti_box=profile.anti_box,
                 clarity=profile.clarity,
                 anti_sibilance=profile.anti_sibilance,
                 anti_fatigue=profile.anti_fatigue,
@@ -181,7 +180,6 @@ class EqualizerController:
         target_profile.tone_bass = float(preset_data.get("tone_bass", 0.0))
         target_profile.tone_treble = float(preset_data.get("tone_treble", 0.0))
         target_profile.sub_bass = bool(preset_data.get("sub_bass", False))
-        target_profile.anti_box = bool(preset_data.get("anti_box", False))
         target_profile.clarity = bool(preset_data.get("clarity", False))
         target_profile.anti_sibilance = bool(preset_data.get("anti_sibilance", False))
         target_profile.anti_fatigue = bool(preset_data.get("anti_fatigue", False))
@@ -519,9 +517,6 @@ class EqualizerController:
 
     def toggle_sub_bass(self) -> None:
         self._toggle_feature("sub_bass", "Extensión de subgraves")
-
-    def toggle_anti_box(self) -> None:
-        self._toggle_feature("anti_box", "Filtro anti-caja")
 
     def toggle_ground_hum(self) -> None:
         self._toggle_feature("ground_hum", "Filtro anti-zumbido eléctrico")

@@ -31,7 +31,7 @@ Entre las acciones que puedes asignar se encuentran:
 - Activar o desactivar el modo mono y la inversión de canales izquierdo y derecho.
 - Activar o desactivar la compensación de volumen (Loudness).
 - Activar o desactivar la claridad de la voz de NVDA o el realce de presencia vocal.
-- Activar o desactivar los filtros para auriculares: anti-fatiga, anti-sibilancia, anti-encajonamiento, subgraves, subsónico y anti-zumbido eléctrico.
+- Activar o desactivar los filtros para auriculares: anti-fatiga, anti-sibilancia, subgraves, subsónico y anti-zumbido eléctrico.
 - Comprobar la orientación de los auriculares con tonos de prueba en canal izquierdo, derecho y centro.
 - Restablecer el ecualizador a una curva plana (0 dB).
 - Comprobar si hay conflictos de teclas con otros complementos.

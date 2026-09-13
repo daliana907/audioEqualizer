@@ -352,14 +352,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self._controller.toggle_sub_bass()
 
     @script(
-        description=_("Activa o desactiva el filtro anti-encajonamiento (400 Hz)."),
-        category=scriptCategory,
-    )
-    def script_toggleAntiBox(self, gesture):
-        """Conmuta el filtro en 400 Hz para eliminar resonancias nasales o de caja."""
-        self._controller.toggle_anti_box()
-
-    @script(
         description=_("Activa o desactiva el filtro contra zumbidos eléctricos de red."),
         category=scriptCategory,
     )

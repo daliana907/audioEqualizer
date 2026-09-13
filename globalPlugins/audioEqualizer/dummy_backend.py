@@ -46,7 +46,6 @@ class DummyBackend(AudioBackend):
         tone_bass: float = 0.0,
         tone_treble: float = 0.0,
         sub_bass: bool = False,
-        anti_box: bool = False,
         clarity: bool = False,
         anti_sibilance: bool = False,
         anti_fatigue: bool = False,
@@ -66,7 +65,6 @@ class DummyBackend(AudioBackend):
         self.tone_bass = tone_bass
         self.tone_treble = tone_treble
         self.sub_bass = sub_bass
-        self.anti_box = anti_box
         self.clarity = clarity
         self.anti_sibilance = anti_sibilance
         self.anti_fatigue = anti_fatigue

@@ -56,7 +56,6 @@ class ApoBackend(AudioBackend):
         self._tone_bass = constants.DEFAULT_TONE_BASS
         self._tone_treble = constants.DEFAULT_TONE_TREBLE
         self._sub_bass = constants.DEFAULT_SUB_BASS
-        self._anti_box = constants.DEFAULT_ANTI_BOX
         self._clarity = constants.DEFAULT_CLARITY
         self._anti_sibilance = constants.DEFAULT_ANTI_SIBILANCE
         self._anti_fatigue = constants.DEFAULT_ANTI_FATIGUE
@@ -139,7 +138,6 @@ class ApoBackend(AudioBackend):
         tone_bass: float = 0.0,
         tone_treble: float = 0.0,
         sub_bass: bool = False,
-        anti_box: bool = False,
         clarity: bool = False,
         anti_sibilance: bool = False,
         anti_fatigue: bool = False,
@@ -162,7 +160,6 @@ class ApoBackend(AudioBackend):
         self._tone_bass = float(tone_bass)
         self._tone_treble = float(tone_treble)
         self._sub_bass = bool(sub_bass)
-        self._anti_box = bool(anti_box)
         self._clarity = bool(clarity)
         self._anti_sibilance = bool(anti_sibilance)
         self._anti_fatigue = bool(anti_fatigue)
@@ -322,8 +319,6 @@ class ApoBackend(AudioBackend):
                 lines.append("Filter: ON HP Fc 20 Hz Q 0.707")
             if self._sub_bass:
                 lines.append("Filter: ON LS Fc 70 Hz Gain 6.0 dB Q 0.8")
-            if self._anti_box:
-                lines.append("Filter: ON PK Fc 400 Hz Gain -4.5 dB Q 1.1")
             if self._clarity:
                 lines.append("Filter: ON PK Fc 5500 Hz Gain 5.5 dB Q 1.2")
             if self._anti_sibilance:
@@ -388,7 +383,6 @@ class ApoBackend(AudioBackend):
                     tone_bass=self._tone_bass,
                     tone_treble=self._tone_treble,
                     sub_bass=self._sub_bass,
-                    anti_box=self._anti_box,
                     clarity=self._clarity,
                     anti_sibilance=self._anti_sibilance,
                     anti_fatigue=self._anti_fatigue,

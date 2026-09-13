@@ -19,7 +19,7 @@ class TestScriptsConfiguration(unittest.TestCase):
                             kwargs[kw.arg] = kw.value
                 scripts[node.name] = kwargs
         
-        self.assertGreaterEqual(len(scripts), 30, 'Should have at least 30 scripts')
+        self.assertGreaterEqual(len(scripts), 29, 'Should have at least 29 scripts')
         for name, kw in scripts.items():
             self.assertIn('category', kw, f'{name} missing category')
             self.assertIn('description', kw, f'{name} missing description')

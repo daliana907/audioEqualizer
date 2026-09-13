@@ -42,7 +42,6 @@ def write_audit_log(
     tone_bass: float,
     tone_treble: float,
     sub_bass: bool,
-    anti_box: bool,
     clarity: bool,
     anti_sibilance: bool = False,
     anti_fatigue: bool = False,
@@ -103,11 +102,6 @@ def write_audit_log(
             "Extensión de subgraves 50-53 mm",
             sub_bass,
             "Filter: ON LS Fc 70 Hz Gain 6.0 dB Q 0.8"
-        ))
-        report_lines.append(_check(
-            "Filtro anti-encajonamiento 400 Hz",
-            anti_box,
-            "Filter: ON PK Fc 400 Hz Gain -4.5 dB Q 1.1"
         ))
         report_lines.append(_check(
             "Realce de claridad 5.5 kHz",
@@ -248,8 +242,6 @@ def get_voice_summary(profile: Any, profile_name: str = "") -> str:
     
     if getattr(profile, 'sub_bass', False):
         active.append("Subgraves 70 Hz (+6 dB)")
-    if getattr(profile, 'anti_box', False):
-        active.append("Filtro anti-caja (-4.5 dB)")
     if getattr(profile, 'clarity', False):
         active.append("Claridad (+5.5 dB)")
     if getattr(profile, 'anti_sibilance', False):

@@ -183,6 +183,8 @@ class EqualizerDialog(wx.Dialog):
             maxValue=constants.MAX_STEREO_WIDTH,
             style=wx.SL_HORIZONTAL
         )
+        self._width_slider.SetLineSize(5)
+        self._width_slider.SetPageSize(10)
         self._update_width_name()
         self._width_slider.Bind(wx.EVT_SLIDER, self._on_width_scroll)
         width_row.Add(width_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
@@ -244,11 +246,6 @@ class EqualizerDialog(wx.Dialog):
         self._sub_bass_cb.SetValue(self._profile.sub_bass)
         self._sub_bass_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
         hp_sizer.Add(self._sub_bass_cb, 0, wx.ALL, 4)
-
-        self._anti_box_cb = wx.CheckBox(scroll_panel, label="Filtro anti-encajonamien&to (-4.5 dB en 400 Hz, elimina sonido hueco/caja)")
-        self._anti_box_cb.SetValue(self._profile.anti_box)
-        self._anti_box_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
-        hp_sizer.Add(self._anti_box_cb, 0, wx.ALL, 4)
 
         self._clarity_cb = wx.CheckBox(scroll_panel, label="Realce de clari&dad y presencia (+5.5 dB en 5.5 kHz, voz y brillo nítidos)")
         self._clarity_cb.SetValue(self._profile.clarity)
@@ -363,6 +360,8 @@ class EqualizerDialog(wx.Dialog):
 
     def _on_width_scroll(self, event):
         self._update_width_name()
+        val = self._width_slider.GetValue()
+        ui.message(f"Ancho estéreo: {val}%")
         self._on_apply(event)
         event.Skip()
 
@@ -503,7 +502,6 @@ class EqualizerDialog(wx.Dialog):
 
         # Mejoras para auriculares profesionales
         self._sub_bass_cb.SetValue(bool(prof.get("sub_bass", False)))
-        self._anti_box_cb.SetValue(bool(prof.get("anti_box", False)))
         self._clarity_cb.SetValue(bool(prof.get("clarity", False)))
         self._anti_sibilance_cb.SetValue(bool(prof.get("anti_sibilance", False)))
         self._anti_fatigue_cb.SetValue(bool(prof.get("anti_fatigue", False)))
@@ -546,42 +544,6 @@ class EqualizerDialog(wx.Dialog):
         event.Skip()
 
     def _sync_profile_from_ui(self):
-        self._profile.enabled = self._enabled_cb.GetValue()
-        self._profile.preamp = float(self._preamp_slider.GetValue())
-        self._profile.auto_preamp = self._auto_preamp_cb.GetValue()
-        self._profile.loudness = self._loudness_cb.GetValue()
-        self._profile.ground_hum = self._ground_hum_cb.GetValue()
-        self._profile.mono = self._mono_cb.GetValue()
-        self._profile.swap_channels = self._swap_cb.GetValue()
-        self._profile.balance = self._balance_slider.GetValue()
-        self._profile.tone_bass = float(self._tone_bass_slider.GetValue())
-        self._profile.tone_treble = float(self._tone_treble_slider.GetValue())
-        self._profile.sub_bass = self._sub_bass_cb.GetValue()
-        self._profile.anti_box = self._anti_box_cb.GetValue()
-        self._profile.clarity = self._clarity_cb.GetValue()
-        self._profile.anti_sibilance = self._anti_sibilance_cb.GetValue()
-        self._profile.anti_fatigue = self._anti_fatigue_cb.GetValue()
-        self._profile.subsonic = self._subsonic_cb.GetValue()
-        self._profile.nvda_voice = self._nvda_voice_cb.GetValue()
-        self._profile.stereo_width = self._width_slider.GetValue()
-        
-        prof_idx = self._profile_choice.GetSelection()
-        self._profile.profile_index = prof_idx
-        if prof_idx < profiles.CUSTOM_INDEX:
-            prof = profiles.PREDEFINED_PROFILES[prof_idx]
-            self._profile.gains = list(prof["gains"])
-        elif prof_idx > profiles.CUSTOM_INDEX:
-            user_profs = config.load_user_profiles()
-            user_idx = prof_idx - profiles.CUSTOM_INDEX - 1
-            if 0 <= user_idx < len(user_profs):
-                self._profile.gains = list(user_profs[user_idx]["gains"])
-            else:
-                self._profile.gains = [float(s.GetValue()) for s in self._band_sliders]
-        else:
-            gains = [float(s.GetValue()) for s in self._band_sliders]
-            self._profile.gains = gains
-
-    def _sync_profile_from_ui(self):
         """Lee el estado de todos los controles visuales y actualiza el objeto perfil en memoria.
 
         Recopila el estado de las casillas de verificación, los deslizadores de balance y
@@ -598,7 +560,6 @@ class EqualizerDialog(wx.Dialog):
         self._profile.tone_bass = float(self._tone_bass_slider.GetValue())
         self._profile.tone_treble = float(self._tone_treble_slider.GetValue())
         self._profile.sub_bass = self._sub_bass_cb.GetValue()
-        self._profile.anti_box = self._anti_box_cb.GetValue()
         self._profile.clarity = self._clarity_cb.GetValue()
         self._profile.anti_sibilance = self._anti_sibilance_cb.GetValue()
         self._profile.anti_fatigue = self._anti_fatigue_cb.GetValue()
@@ -682,7 +643,6 @@ class EqualizerDialog(wx.Dialog):
             self._tone_treble_slider.SetValue(0)
             self._update_tone_names()
             self._sub_bass_cb.SetValue(False)
-            self._anti_box_cb.SetValue(False)
             self._clarity_cb.SetValue(False)
             self._anti_sibilance_cb.SetValue(False)
             self._anti_fatigue_cb.SetValue(False)

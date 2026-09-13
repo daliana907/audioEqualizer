@@ -45,7 +45,6 @@ class AudioBackend(abc.ABC):
         tone_bass: float = 0.0,
         tone_treble: float = 0.0,
         sub_bass: bool = False,
-        anti_box: bool = False,
         clarity: bool = False,
         anti_sibilance: bool = False,
         anti_fatigue: bool = False,
