@@ -712,4 +712,7 @@ class EqualizerDialog(wx.Dialog):
     def _cleanup(self):
         """Cierra y destruye la ventana asegurando la liberación de recursos."""
         self._cleanup_controller_ref()
-        self.Destroy()
+        try:
+            self.Destroy()
+        except (RuntimeError, wx.PyDeadObjectError):
+            pass
