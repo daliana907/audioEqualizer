@@ -93,7 +93,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
     def _on_settings_menu(self, evt):
         """Abre la ventana de configuración accesible al pulsar en el menú."""
-        self._controller.show_gui()
+        wx.CallAfter(self._controller.show_gui)
 
     def _open_log(self, evt):
         """Abre el archivo de registro y auditoría de filtros con el visor predeterminado."""
@@ -137,7 +137,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     )
     def script_openEqualizer(self, gesture):
         """Abre o enfoca la ventana accesible con los controles de las 31 bandas y filtros."""
-        self._controller.show_gui()
+        wx.CallAfter(self._controller.show_gui)
 
     @script(
         # Translators: Descripción del script para conmutar el ecualizador de audio.

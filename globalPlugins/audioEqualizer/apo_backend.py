@@ -41,14 +41,9 @@ class ApoBackend(AudioBackend):
         rutas a config.txt y al archivo privado del complemento nvda_equalizer.txt.
         """
         log.debug("AudioEqualizer: Instanciando APO backend nativo.")
-        self._program_files = os.environ.get("ProgramW6432") or os.environ.get("ProgramFiles", r"C:\Program Files")
-        self._apo_dir = os.path.join(self._program_files, "EqualizerAPO")
-        self._config_dir = os.path.join(self._apo_dir, "config")
-        self._main_config = os.path.join(self._config_dir, "config.txt")
-        
         self._addon_file_name = "nvda_equalizer.txt"
-        self._addon_config_path = os.path.join(self._config_dir, self._addon_file_name)
         self._include_directive = f"Include: {self._addon_file_name}"
+        self._detect_and_init_paths()
         
         self._enabled = False
         self._gains = list(constants.DEFAULT_GAINS)
@@ -70,11 +65,41 @@ class ApoBackend(AudioBackend):
         self._nvda_voice = constants.DEFAULT_NVDA_VOICE
         self._stereo_width = constants.DEFAULT_STEREO_WIDTH
 
+    def _detect_and_init_paths(self) -> None:
+        """Localiza de forma exhaustiva la carpeta de configuración de Equalizer APO."""
+        candidates = []
+        for env_var in ("ProgramW6432", "ProgramFiles", "ProgramFiles(x86)"):
+            val = os.environ.get(env_var)
+            if val:
+                candidates.append(os.path.join(val, "EqualizerAPO"))
+        candidates.extend([
+            r"C:\Program Files\EqualizerAPO",
+            r"C:\Program Files (x86)\EqualizerAPO",
+        ])
+        
+        chosen_apo = None
+        for p in candidates:
+            if os.path.isdir(os.path.join(p, "config")):
+                chosen_apo = p
+                break
+                
+        if not chosen_apo:
+            pf = os.environ.get("ProgramW6432") or os.environ.get("ProgramFiles", r"C:\Program Files")
+            chosen_apo = os.path.join(pf, "EqualizerAPO")
+
+        self._apo_dir = chosen_apo
+        self._config_dir = os.path.join(self._apo_dir, "config")
+        self._main_config = os.path.join(self._config_dir, "config.txt")
+        self._addon_config_path = os.path.join(self._config_dir, self._addon_file_name)
+
     def is_available(self) -> bool:
         """Comprueba si Equalizer APO está instalado en el equipo.
 
         Verifica si la carpeta de configuración en Program Files existe en el disco.
         """
+        if os.path.isdir(self._config_dir):
+            return True
+        self._detect_and_init_paths()
         return os.path.isdir(self._config_dir)
 
     def get_enabled(self) -> bool:

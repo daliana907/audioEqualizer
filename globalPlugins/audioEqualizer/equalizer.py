@@ -222,13 +222,14 @@ class EqualizerController:
         success = self._sync_backend(self._current_profile, notify_user=False)
         if success:
             config.save_profile(self._current_profile)
-            if self._dialog_instance:
+            if self._is_dialog_active():
                 try:
                     self._dialog_instance._refresh_profiles_list()
                     self._dialog_instance._profile_choice.SetSelection(new_idx)
                     self._dialog_instance._apply_profile_to_ui(new_idx)
                 except Exception as ex:
                     log.error(f"AudioEqualizer: Error actualizando UI tras cambiar de perfil: {ex}", exc_info=True)
+                    self._dialog_instance = None
             ui.message(f"Perfil: {prof['name']}")
 
     def next_profile(self) -> None:
@@ -239,33 +240,67 @@ class EqualizerController:
         """Retrocede al perfil de ecualización anterior en la lista."""
         self._cycle_profile(-1)
 
+    def _is_dialog_active(self) -> bool:
+        """Determina de forma segura si la ventana gráfica está activa y no ha sido destruida."""
+        if self._dialog_instance is None:
+            return False
+        try:
+            if bool(self._dialog_instance):
+                return True
+        except Exception:
+            pass
+        self._dialog_instance = None
+        return False
+
     def show_gui(self) -> None:
         """Abre la ventana accesible de configuración del ecualizador.
 
-        Si la ventana ya se encontraba abierta en segundo plano, la trae al frente
-        y le devuelve el foco para evitar abrir duplicados innecesarios.
+        Si la ventana ya se encontraba abierta en segundo plano, la trae al frente,
+        la restaura si estaba minimizada y le devuelve el foco de manera confiable.
         Si Equalizer APO no está instalado en el sistema, inicia el diálogo guiado
         de descarga para que el usuario pueda instalarlo fácilmente.
         """
         if not self._backend.is_available():
             self._sync_backend(self._current_profile, notify_user=True)
             return
-            
-        if self._dialog_instance:
-            self._dialog_instance.Raise()
-            self._dialog_instance.SetFocus()
-            return
 
         def _run_gui():
+            if self._dialog_instance is not None:
+                try:
+                    if bool(self._dialog_instance):
+                        if hasattr(self._dialog_instance, "IsIconized") and self._dialog_instance.IsIconized():
+                            self._dialog_instance.Restore()
+                        if hasattr(self._dialog_instance, "IsShown") and not self._dialog_instance.IsShown():
+                            self._dialog_instance.Show()
+                        self._dialog_instance.Raise()
+                        self._dialog_instance.SetFocus()
+                        return
+                    else:
+                        self._dialog_instance = None
+                except Exception as ex:
+                    log.debug(f"AudioEqualizer: Instancia previa de diálogo no utilizable, recreando: {ex}")
+                    self._dialog_instance = None
+
             try:
-                log.debug("AudioEqualizer: Mostrando interfaz gráfica.")
+                log.debug("AudioEqualizer: Mostrando interfaz gráfica accesible.")
+                try:
+                    nvda_gui.mainFrame.prePopup()
+                except Exception:
+                    pass
                 self._dialog_instance = EqualizerDialog(
                     nvda_gui.mainFrame, 
                     self, 
                     self._current_profile.clone()
                 )
                 self._dialog_instance.Show()
+                self._dialog_instance.Raise()
+                self._dialog_instance.SetFocus()
             except Exception as e:
+                try:
+                    nvda_gui.mainFrame.postPopup()
+                except Exception:
+                    pass
+                self._dialog_instance = None
                 log.error(f"AudioEqualizer: Error al abrir GUI: {e}", exc_info=True)
                 try:
                     from . import logger
@@ -326,13 +361,14 @@ class EqualizerController:
         setattr(self._current_profile, attr, new_val)
         self._sync_backend(self._current_profile, notify_user=False)
         config.save_profile(self._current_profile)
-        if self._dialog_instance:
+        if self._is_dialog_active():
             try:
                 slider = self._dialog_instance._tone_bass_slider if is_bass else self._dialog_instance._tone_treble_slider
                 slider.SetValue(int(round(new_val)))
                 self._dialog_instance._update_tone_names()
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando control de tono en GUI: {ex}", exc_info=True)
+                self._dialog_instance = None
         ui.message(f"{label}: {new_val:+.1f} dB")
 
     def adjust_tone_bass(self, delta: float) -> None:
@@ -363,12 +399,13 @@ class EqualizerController:
         self._current_profile.preamp = new_val
         self._sync_backend(self._current_profile, notify_user=False)
         config.save_profile(self._current_profile)
-        if self._dialog_instance:
+        if self._is_dialog_active():
             try:
                 self._dialog_instance._preamp_slider.SetValue(int(round(new_val)))
                 self._dialog_instance._preamp_slider.SetName(f"Preamplificación, {int(round(new_val))} decibelios")
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando preamp en GUI: {ex}", exc_info=True)
+                self._dialog_instance = None
         ui.message(f"Preamplificación: {new_val:+.1f} dB")
 
     def toggle_auto_preamp(self) -> None:
@@ -377,12 +414,13 @@ class EqualizerController:
         self._current_profile.auto_preamp = new_state
         self._sync_backend(self._current_profile, notify_user=False)
         config.save_profile(self._current_profile)
-        if self._dialog_instance:
+        if self._is_dialog_active():
             try:
                 self._dialog_instance._auto_preamp_cb.SetValue(new_state)
                 self._dialog_instance._preamp_slider.Enable(not new_state)
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando auto_preamp en GUI: {ex}", exc_info=True)
+                self._dialog_instance = None
         estado = "activado" if new_state else "desactivado"
         ui.message(f"Preamplificador automático anticlíping {estado}")
 
@@ -393,12 +431,13 @@ class EqualizerController:
         self._current_profile.stereo_width = new_val
         self._sync_backend(self._current_profile, notify_user=False)
         config.save_profile(self._current_profile)
-        if self._dialog_instance:
+        if self._is_dialog_active():
             try:
                 self._dialog_instance._width_slider.SetValue(new_val)
                 self._dialog_instance._update_width_name()
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando ancho estéreo en GUI: {ex}", exc_info=True)
+                self._dialog_instance = None
         ui.message(f"Ancho estéreo: {new_val} %")
 
     def adjust_balance(self, delta: int) -> None:
@@ -408,12 +447,13 @@ class EqualizerController:
         self._current_profile.balance = new_val
         self._sync_backend(self._current_profile, notify_user=False)
         config.save_profile(self._current_profile)
-        if self._dialog_instance:
+        if self._is_dialog_active():
             try:
                 self._dialog_instance._balance_slider.SetValue(new_val)
                 self._dialog_instance._update_balance_name()
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando balance en GUI: {ex}", exc_info=True)
+                self._dialog_instance = None
         if new_val == 0:
             ui.message("Balance estéreo: centrado")
         elif new_val < 0:
@@ -426,12 +466,13 @@ class EqualizerController:
         self._current_profile.balance = 0
         self._sync_backend(self._current_profile, notify_user=False)
         config.save_profile(self._current_profile)
-        if self._dialog_instance:
+        if self._is_dialog_active():
             try:
                 self._dialog_instance._balance_slider.SetValue(0)
                 self._dialog_instance._update_balance_name()
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando balance en GUI: {ex}", exc_info=True)
+                self._dialog_instance = None
         ui.message("Balance estéreo: centrado")
 
     def _toggle_feature(self, attr_name: str, label_name: str) -> None:
@@ -441,13 +482,14 @@ class EqualizerController:
         setattr(self._current_profile, attr_name, new_state)
         self._sync_backend(self._current_profile, notify_user=False)
         config.save_profile(self._current_profile)
-        if self._dialog_instance:
+        if self._is_dialog_active():
             try:
                 cb_attr = f"_{attr_name}_cb"
                 if hasattr(self._dialog_instance, cb_attr):
                     getattr(self._dialog_instance, cb_attr).SetValue(new_state)
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando {attr_name} en GUI: {ex}", exc_info=True)
+                self._dialog_instance = None
         estado = "activado" if new_state else "desactivado"
         ui.message(f"{label_name} {estado}")
 
@@ -490,16 +532,24 @@ class EqualizerController:
         self._current_profile.enabled = True
         self._sync_backend(self._current_profile, notify_user=False)
         config.save_profile(self._current_profile)
-        if self._dialog_instance:
+        if self._is_dialog_active():
             try:
                 self._dialog_instance._profile_choice.SetSelection(profiles.CUSTOM_INDEX)
                 self._dialog_instance._apply_profile_to_ui(profiles.CUSTOM_INDEX)
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando reset en GUI: {ex}", exc_info=True)
+                self._dialog_instance = None
         ui.message("Ecualizador restablecido a respuesta plana (0 dB)")
 
     def terminate(self) -> None:
-        """Libera los recursos del backend de audio al cerrar o reiniciar NVDA."""
+        """Libera los recursos del backend de audio y cierra la GUI al cerrar o reiniciar NVDA."""
+        if self._dialog_instance is not None:
+            try:
+                if bool(self._dialog_instance):
+                    self._dialog_instance.Destroy()
+            except Exception:
+                pass
+            self._dialog_instance = None
         try:
             self._backend.close()
         except Exception as e:

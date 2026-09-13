@@ -49,6 +49,7 @@ class EqualizerDialog(wx.Dialog):
         self._controller = controller
         self._profile = profile
         self._band_sliders = []
+        self._cleaned_up = False
         
         self._build_ui()
         self.CenterOnScreen()
@@ -331,6 +332,7 @@ class EqualizerDialog(wx.Dialog):
         self.SetAffirmativeId(wx.ID_OK)
         self.SetEscapeId(wx.ID_CANCEL)
         self.Bind(wx.EVT_CLOSE, self._on_cancel)
+        self.Bind(wx.EVT_WINDOW_DESTROY, self._on_window_destroy)
 
     def _update_balance_name(self):
         val = self._balance_slider.GetValue()
@@ -635,7 +637,7 @@ class EqualizerDialog(wx.Dialog):
         if event and hasattr(event, "Skip"):
             event.Skip()
 
-    def _on_ok(self, event):
+    def _on_ok(self, event=None):
         """Guarda permanentemente la configuración en NVDA y cierra la ventana."""
         try:
             self._sync_profile_from_ui()
@@ -643,18 +645,23 @@ class EqualizerDialog(wx.Dialog):
             self._cleanup()
         except Exception as e:
             log.error(f"AudioEqualizer: Error al guardar cambios y cerrar: {e}", exc_info=True)
-            logger.log_error(f"Error al guardar cambios en GUI (Aceptar): {e}", exc=e, component="EqualizerDialog")
+            try:
+                logger.log_error(f"Error al guardar cambios en GUI (Aceptar): {e}", exc=e, component="EqualizerDialog")
+            except Exception:
+                pass
             ui.message(f"Error al guardar cambios: {e}")
 
-    def _on_cancel(self, event):
+    def _on_cancel(self, event=None):
         """Descarta las modificaciones temporales, restaura el estado previo y cierra la ventana."""
         try:
             self._controller.restore_persisted_state()
-            self._cleanup()
         except Exception as e:
             log.error(f"AudioEqualizer: Error al restaurar estado en Cancelar: {e}", exc_info=True)
-            logger.log_error(f"Error en Cancelar de GUI: {e}", exc=e, component="EqualizerDialog")
-            self._cleanup()
+            try:
+                logger.log_error(f"Error en Cancelar de GUI: {e}", exc=e, component="EqualizerDialog")
+            except Exception:
+                pass
+        self._cleanup()
 
     def _on_reset(self, event):
         """Restablece los controles a sus valores iniciales.
@@ -718,7 +725,29 @@ class EqualizerDialog(wx.Dialog):
         if event and hasattr(event, "Skip"):
             event.Skip()
 
+    def _on_window_destroy(self, event=None):
+        """Notificación del sistema wx cuando la ventana es destruida."""
+        self._cleanup_controller_ref()
+        if event and hasattr(event, "Skip"):
+            event.Skip()
+
+    def _cleanup_controller_ref(self):
+        """Libera la referencia en el controlador y notifica a NVDA mainFrame."""
+        if getattr(self, "_cleaned_up", False):
+            return
+        self._cleaned_up = True
+        try:
+            if self._controller and getattr(self._controller, "_dialog_instance", None) is self:
+                self._controller._dialog_instance = None
+        except Exception:
+            pass
+        try:
+            from gui import mainFrame
+            mainFrame.postPopup()
+        except Exception:
+            pass
+
     def _cleanup(self):
-        if self._controller:
-            self._controller._dialog_instance = None
+        """Cierra y destruye la ventana asegurando la liberación de recursos."""
+        self._cleanup_controller_ref()
         self.Destroy()
