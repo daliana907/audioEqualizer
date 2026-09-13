@@ -383,20 +383,25 @@ def save_user_profile(name: str, profile: EqualizerProfile) -> bool:
     }
     
     for i, p in enumerate(profiles_list):
-        if p.get("name") == name:
+        if isinstance(p, dict) and p.get("name") == name:
             profiles_list[i] = prof_dict
             break
     else:
         profiles_list.append(prof_dict)
         
+    tmp_file = USER_PROFILES_FILE + ".tmp"
     try:
-        tmp_file = USER_PROFILES_FILE + ".tmp"
         with open(tmp_file, "w", encoding="utf-8") as f:
             json.dump(profiles_list, f, indent=2, ensure_ascii=False)
         os.replace(tmp_file, USER_PROFILES_FILE)
         return True
     except Exception as e:
         log.error(f"AudioEqualizer: Error guardando perfil de usuario '{name}': {e}", exc_info=True)
+        try:
+            if os.path.exists(tmp_file):
+                os.remove(tmp_file)
+        except OSError:
+            pass
         try:
             from . import logger
             ctx = {"profile_name": name, "file_path": USER_PROFILES_FILE}
@@ -413,17 +418,22 @@ def delete_user_profile(name: str) -> bool:
     Devuelve True si el perfil fue encontrado y eliminado, o False si no existía.
     """
     profiles_list = load_user_profiles()
-    new_list = [p for p in profiles_list if p.get("name") != name]
+    new_list = [p for p in profiles_list if isinstance(p, dict) and p.get("name") != name]
     if len(new_list) == len(profiles_list):
         return False
+    tmp_file = USER_PROFILES_FILE + ".tmp"
     try:
-        tmp_file = USER_PROFILES_FILE + ".tmp"
         with open(tmp_file, "w", encoding="utf-8") as f:
             json.dump(new_list, f, indent=2, ensure_ascii=False)
         os.replace(tmp_file, USER_PROFILES_FILE)
         return True
     except Exception as e:
         log.error(f"AudioEqualizer: Error eliminando perfil de usuario '{name}': {e}", exc_info=True)
+        try:
+            if os.path.exists(tmp_file):
+                os.remove(tmp_file)
+        except OSError:
+            pass
         try:
             from . import logger
             ctx = {"profile_name": name, "file_path": USER_PROFILES_FILE}

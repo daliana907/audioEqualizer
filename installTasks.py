@@ -33,7 +33,12 @@ def onUninstall():
 		log.warning(f"Audio Equalizer: error al limpiar configuración en desinstalación: {e}")
 	try:
 		import globalVars
-		for log_name in ("audioEqualizer.log", "audioEqualizer.log.old"):
+		for log_name in (
+			"audioEqualizer.log",
+			"audioEqualizer.log.old",
+			"audioEqualizer_user_profiles.json",
+			"audioEqualizer_user_profiles.json.tmp",
+		):
 			log_p = os.path.join(globalVars.appArgs.configPath, log_name)
 			if os.path.exists(log_p):
 				try: os.remove(log_p)
