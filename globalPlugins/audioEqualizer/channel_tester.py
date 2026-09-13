@@ -129,7 +129,7 @@ def play_channel_test() -> None:
         try:
             if not os.path.exists(_TEST_WAV_PATH) or os.path.getsize(_TEST_WAV_PATH) == 0:
                 generate_channel_test_wav()
-            winsound.PlaySound(_TEST_WAV_PATH, winsound.SND_FILENAME | winsound.SND_ASYNC)
+            winsound.PlaySound(_TEST_WAV_PATH, winsound.SND_FILENAME | winsound.SND_NODEFAULT)
         except Exception as e:
             log.error(f"AudioEqualizer: Error reproduciendo comprobación de canales: {e}", exc_info=True)
             try:
