@@ -390,8 +390,10 @@ def save_user_profile(name: str, profile: EqualizerProfile) -> bool:
         profiles_list.append(prof_dict)
         
     try:
-        with open(USER_PROFILES_FILE, "w", encoding="utf-8") as f:
+        tmp_file = USER_PROFILES_FILE + ".tmp"
+        with open(tmp_file, "w", encoding="utf-8") as f:
             json.dump(profiles_list, f, indent=2, ensure_ascii=False)
+        os.replace(tmp_file, USER_PROFILES_FILE)
         return True
     except Exception as e:
         log.error(f"AudioEqualizer: Error guardando perfil de usuario '{name}': {e}", exc_info=True)
@@ -415,8 +417,10 @@ def delete_user_profile(name: str) -> bool:
     if len(new_list) == len(profiles_list):
         return False
     try:
-        with open(USER_PROFILES_FILE, "w", encoding="utf-8") as f:
+        tmp_file = USER_PROFILES_FILE + ".tmp"
+        with open(tmp_file, "w", encoding="utf-8") as f:
             json.dump(new_list, f, indent=2, ensure_ascii=False)
+        os.replace(tmp_file, USER_PROFILES_FILE)
         return True
     except Exception as e:
         log.error(f"AudioEqualizer: Error eliminando perfil de usuario '{name}': {e}", exc_info=True)
