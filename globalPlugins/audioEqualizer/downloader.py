@@ -42,6 +42,20 @@ except ImportError:
     import logging
     log = logging.getLogger("audioEqualizer.downloader")
 
+try:
+    _
+except NameError:
+    try:
+        import addonHandler
+        addonHandler.initTranslation()
+    except Exception:
+        pass
+    try:
+        _
+    except NameError:
+        _ = lambda s: s
+
+
 
 def get_system_arch() -> str:
     """Detecta si el sistema operativo Windows es de 64 bits o 32 bits.
@@ -104,8 +118,14 @@ def get_downloads_dir() -> str:
             None,
             ctypes.byref(buf)
         )
-        if res == 0 and buf.value and os.path.isdir(buf.value):
-            return buf.value
+        if res == 0 and buf.value:
+            downloads_path = buf.value
+            try:
+                ctypes.windll.ole32.CoTaskMemFree(buf)
+            except Exception:
+                pass
+            if os.path.isdir(downloads_path):
+                return downloads_path
     except Exception as e:
         log.debug(f"AudioEqualizer: Error obteniendo carpeta Descargas vía API: {e}")
 
