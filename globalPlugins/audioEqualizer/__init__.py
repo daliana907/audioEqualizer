@@ -84,10 +84,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         # Translators: Elemento de menú para descargar e instalar Equalizer APO.
         install_item = self._tools_menu.Append(wx.ID_ANY, _("Descargar e instalar motor de audio (Equalizer APO)..."))
         gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._install_apo, install_item)
-
-        # Translators: Elemento de menú para abrir la documentación del ecualizador.
-        docs_item = self._tools_menu.Append(wx.ID_ANY, _("Ayuda"))
-        gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._open_docs, docs_item)
         
         self._submenu_item = gui.mainFrame.sysTrayIcon.toolsMenu.AppendSubMenu(
             self._tools_menu, 
@@ -114,37 +110,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         from . import downloader
         downloader.start_apo_download_flow()
 
-    def _open_docs(self, evt):
-        """Abre la documentación HTML del complemento en el idioma de NVDA o en español por defecto."""
-        addon_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        try:
-            import languageHandler
-            lang = languageHandler.getLanguage().split("_")[0]
-        except Exception:
-            lang = "es"
-        doc_path = os.path.join(addon_dir, "doc", lang, "readme.html")
-        if not os.path.exists(doc_path):
-            doc_path = os.path.join(addon_dir, "doc", "es", "readme.html")
-        if not os.path.exists(doc_path):
-            doc_path = os.path.join(addon_dir, "doc", "en", "readme.html")
-        
-        if os.path.exists(doc_path):
-            try:
-                gui.openDocumentation(doc_path)
-            except Exception as e:
-                import logHandler
-                logHandler.log.error(f"AudioEqualizer: Error al abrir documentación con gui.openDocumentation: {e}", exc_info=True)
-                # Translators: Mensaje cuando falla la apertura de la documentación del ecualizador.
-                gui.messageBox(
-                    _("No se pudo abrir la documentación: {error}").format(error=e),
-                    # Translators: Título del diálogo de error de documentación.
-                    _("Error - Ecualizador de audio"),
-                    wx.OK | wx.ICON_ERROR
-                )
-        else:
-            import ui
-            # Translators: Mensaje cuando no se encuentra el archivo de documentación.
-            ui.message(_("La documentación no se encuentra disponible."))
 
     def terminate(self):
         """Descarga el complemento de forma ordenada al cerrar o reiniciar NVDA.
