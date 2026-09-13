@@ -98,7 +98,7 @@ class EqualizerController:
                 if profile.stereo_width > 100:
                     import math
                     w = profile.stereo_width / 100.0
-                    stereo_gain = round(20.0 * math.log10(0.5 * (1.0 + w)), 2)
+                    stereo_gain = round(20.0 * math.log10(max(1e-6, 0.5 * (1.0 + w))), 2)
 
                 isolated_boosts = [0.0] + profile.gains + [max(0.0, profile.tone_bass), max(0.0, profile.tone_treble)]
                 if profile.nvda_voice:
