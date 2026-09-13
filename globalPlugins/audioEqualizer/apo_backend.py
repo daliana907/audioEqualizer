@@ -350,14 +350,21 @@ class ApoBackend(AudioBackend):
         try:
             content = "\n".join(lines) + "\n"
             last_err = None
+            tmp_path = self._addon_config_path + ".tmp"
             for attempt in range(10):
                 try:
-                    with open(self._addon_config_path, "w", encoding="utf-8") as f:
+                    with open(tmp_path, "w", encoding="utf-8") as f:
                         f.write(content)
+                    os.replace(tmp_path, self._addon_config_path)
                     log.debug(f"AudioEqualizer: {self._addon_file_name} escrito exitosamente en intento {attempt + 1}.")
                     break
                 except (PermissionError, IOError) as write_err:
                     last_err = write_err
+                    try:
+                        if os.path.exists(tmp_path):
+                            os.remove(tmp_path)
+                    except Exception:
+                        pass
                     log.debug(f"AudioEqualizer: {self._addon_file_name} bloqueado en intento {attempt + 1}/10 ({write_err}), reintentando...")
                     time.sleep(0.04)
             else:
