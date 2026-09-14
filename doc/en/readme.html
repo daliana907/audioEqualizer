@@ -2,41 +2,138 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Audio Equalizer for NVDA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audio Equalizer - User Guide</title>
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    color: #24292e;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+h1, h2, h3, h4 {
+    color: #1b1f23;
+    border-bottom: 1px solid #eaecef;
+    padding-bottom: 0.3em;
+}
+code {
+    background-color: rgba(27,31,35,0.05);
+    border-radius: 3px;
+    font-size: 85%;
+    padding: 0.2em 0.4em;
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+pre {
+    background-color: #f6f8fa;
+    border-radius: 3px;
+    font-size: 85%;
+    line-height: 1.45;
+    overflow: auto;
+    padding: 16px;
+}
+pre code {
+    background-color: transparent;
+    padding: 0;
+}
+ul, ol {
+    padding-left: 2em;
+}
+li {
+    margin: 0.3em 0;
+}
+hr {
+    height: 0.25em;
+    padding: 0;
+    margin: 24px 0;
+    background-color: #e1e4e8;
+    border: 0;
+}
+</style>
 </head>
 <body>
 <h1>Audio Equalizer for NVDA</h1>
-<p>Author: Daliana | Version: 1.3.0 | Compatibility: NVDA 2023.1 or later | License: GNU GPL v2</p>
-<p>This add-on provides a fully accessible 31-band graphic equalizer for NVDA on Windows. It lets you quickly adjust bass and treble, switch sound profiles, correct stereo balance, and apply acoustic filters for headphones and screen reader clarity.</p>
-
-<h2>Requirements and Setup</h2>
-<p>Audio processing is handled through Equalizer APO, an open-source system-wide audio engine for Windows.</p>
 <ul>
-<li>Equalizer APO must be installed on your system.</li>
-<li>If not installed, the add-on offers to download the appropriate 32-bit or 64-bit installer directly to your Downloads folder.</li>
-<li>You can also download it anytime from NVDA menu &gt; Tools &gt; Audio Equalizer &gt; Download and install audio engine (Equalizer APO)... or from <a href="https://sourceforge.net/projects/equalizerapo/">Equalizer APO on SourceForge</a>.</li>
+<li>Author: Daliana</li>
+<li>Version: 1.3.0</li>
+<li>Compatibility: NVDA 2023.1 and later</li>
+<li>License: GNU GPL v2</li>
 </ul>
-
+<p><a href="../es/readme.html">Leer en español</a></p>
+<hr />
+<h2>English Version</h2>
+<p>Audio Equalizer allows you to adjust sound quality in Windows directly through NVDA. You can customize bass, mids, and treble, choose from built-in profiles for music, movies, or games, adjust preamp gain, enhance NVDA voice clarity, and apply specialized headphone filters for fatigue-free listening.</p>
+<h3>Required Audio Engine (Equalizer APO)</h3>
+<p>To apply system-wide audio effects, this add-on uses <strong>Equalizer APO</strong>, a free and open-source audio processing engine for Windows:
+- If you don't have it installed, the add-on will guide you to download and install it automatically the first time you open it.
+- You can also download it anytime from NVDA Menu &gt; Tools &gt; Audio Equalizer &gt; Download and install audio engine (Equalizer APO)... or from its official website: https://sourceforge.net/projects/equalizerapo/</p>
 <h2>Keyboard Shortcuts and Customization</h2>
-<p>To prevent conflicts with native NVDA commands or other add-ons (such as System Monitor), this add-on does not assign default keyboard shortcuts.</p>
-<p>All functions are available from NVDA Menu &gt; Tools &gt; Audio Equalizer, or can be assigned custom shortcuts under NVDA Menu &gt; Preferences &gt; Input Gestures, category "Ecualizador de audio".</p>
-
-<h2>Main Features</h2>
+<p>To avoid conflicts with NVDA built-in commands or other add-ons (such as System Monitor), this add-on does not assign default keyboard shortcuts.</p>
+<p>You can access all functions directly from NVDA Menu &gt; Tools &gt; Audio Equalizer, or assign your own preferred shortcuts in NVDA Menu &gt; Preferences &gt; Input Gestures under the "Audio Equalizer" category.</p>
+<p>Available actions include:</p>
 <ul>
-<li>Sound profiles with built-in presets and user-saved profiles.</li>
-<li>Preamp gain control with automatic clipping protection.</li>
-<li>Stereo balance, Mid/Side stereo width, mono mode, and channel swap.</li>
-<li>Quick bass and treble adjustments.</li>
-<li>Headphone acoustic filters for speech clarity, anti-fatigue, anti-sibilance, and ground hum suppression.</li>
-<li>31 standard ISO frequency bands from 20 Hz to 20 kHz.</li>
-<li>Diagnostic log viewer and add-on shortcut conflict detection.</li>
+<li>Increase / decrease bass (1 dB steps).</li>
+<li>Increase / decrease treble (1 dB steps).</li>
+<li>Increase / decrease preamp volume (1 dB steps).</li>
+<li>Toggle auto preamp on or off to prevent audio clipping.</li>
+<li>Adjust stereo balance left or right, and center it.</li>
+<li>Increase or decrease stereo width.</li>
+<li>Toggle mono audio mode and left/right channel swap.</li>
+<li>Toggle loudness compensation.</li>
+<li>Toggle NVDA voice clarity enhancement or vocal presence.</li>
+<li>Toggle headphone filters: anti-fatigue, anti-sibilance, deep bass, subsonic, and ground loop hum.</li>
+<li>Test headphone orientation with left, right, and center test tones.</li>
+<li>Reset equalizer to flat (0 dB).</li>
+<li>Check shortcut conflicts with other installed add-ons.</li>
 </ul>
-
+<h2>Available Settings in the Dialog</h2>
+<p>Opening settings from NVDA Menu &gt; Tools &gt; Audio Equalizer displays an accessible dialog organized into the following sections:</p>
+<h3>Sound Profiles</h3>
+<p>Choose from pre-configured profiles (Flat, Music, Studio, Movies, Gaming, Voice &amp; Podcasts, Rock, Pop, Electronic, Classical, Jazz, Bass Boost, Treble Boost, and Night Mode). You can also save custom profiles or delete unused ones. A dedicated button allows you to test headphone orientation.</p>
+<h3>Preamp and Gain Control</h3>
+<p>Input volume slider with an auto preamp toggle that automatically reduces overall gain when boosting frequencies to prevent digital distortion.</p>
+<h3>Balance and Stereo Width</h3>
+<p>Controls for mono audio, left/right channel swapping, balance positioning, and stereo width expansion.</p>
+<h3>Headphone Filters</h3>
+<p>Optional filters designed for headphone listening:</p>
+<ul>
+<li>Loudness mode to restore bass and treble fullness at low volume levels.</li>
+<li>NVDA voice clarity to make screen reader speech cut through background audio.</li>
+<li>Vocal presence to highlight speech in calls and podcasts.</li>
+<li>Anti-fatigue filter for extended listening sessions.</li>
+<li>Anti-sibilance filter to soften harsh treble sounds.</li>
+<li>Deep bass boost for headphones lacking low-end punch.</li>
+<li>Subsonic filter to remove inaudible low-frequency rumble.</li>
+<li>Ground loop filter to eliminate 50/60 Hz electrical hum.</li>
+</ul>
+<h3>Tools and Diagnostics</h3>
+<ul>
+<li>View Log button to inspect real-time audio commands.</li>
+<li>Conflict detection tool in the Tools menu to identify overlapping shortcuts.</li>
+</ul>
+<hr />
+<h2>What's new in 1.3.1 (13 September 2026)</h2>
+<ul>
+<li>Lighter add-on footprint: removed unused internal dependencies across 5 modules, reducing the amount of code loaded by NVDA at startup.</li>
+<li>Complete internal technical documentation of all settings window controls, the download dialog, sound profiles, and the test tone generator.</li>
+</ul>
 <h2>What's new in 1.3.0 (13 September 2026)</h2>
 <ul>
-<li>Fixed the stereo width expansion directive so the audio engine always accepts values above 100% without syntax errors.</li>
-<li>Improved automatic anti-clipping protection (auto preamp) to account for overlapping bass/treble boosts and stereo expansion, preventing digital distortion.</li>
-<li>Tweaking a frequency band on a saved custom profile now keeps that profile selected instead of jumping to Custom.</li>
+<li>Fixed stereo width expansion: previously, setting stereo width above 100% caused sound cancellation, leaving audio playing only through the right earphone. The stereo image now expands smoothly and evenly across both channels without volume loss.</li>
+<li>Smarter automatic volume protection: when combining multiple equalizer boosts and filters, the add-on accurately calculates overall gain to prevent distortion and protect your hearing and speakers.</li>
+<li>Preserved equalizer settings during quick adjustments: adjusting bass or treble with quick keys no longer resets your other equalizer sliders.</li>
+<li>Safe profile saving: profiles and settings are saved reliably, protecting your presets against corruption in case of sudden computer shutdowns.</li>
+<li>Automatic profile recovery: if a saved profile is damaged or incomplete, the add-on automatically restores safe defaults so your sound never cuts out.</li>
+<li>Resilient audio engine downloader: downloading Equalizer APO from the menu now uses chunked progress tracking and safely recovers from momentary internet interruptions.</li>
+<li>Smoother headphone orientation test: left, right, and center test tones now play smoothly with gentle fades, eliminating clicks and avoiding default Windows notification sounds when audio devices are busy.</li>
+<li>Improved settings window stability: resolved errors that could occur when quickly closing the settings dialog while audio adjustments were being applied.</li>
+<li>Clean uninstallation: uninstalling or updating the add-on completely removes temporary files without leaving leftover traces on your computer.</li>
+</ul>
+<h3>Credits</h3>
+<ul>
+<li>Audio Processing Engine: Equalizer APO by jthedering and contributors (GNU GPL).</li>
+<li>NVDA Add-on: Developed by Daliana.</li>
 </ul>
 </body>
 </html>

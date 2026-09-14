@@ -127,6 +127,7 @@ def play_channel_test() -> None:
         return
 
     def _worker():
+        """Genera el WAV si no existe y lo reproduce en segundo plano con winsound."""
         try:
             if not os.path.exists(_TEST_WAV_PATH) or os.path.getsize(_TEST_WAV_PATH) == 0:
                 generate_channel_test_wav()

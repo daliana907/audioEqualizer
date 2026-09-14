@@ -11,7 +11,6 @@ de la sincronización en tiempo real, el cálculo matemático del anticlíping a
 el cambio ordenado de perfiles, los controles de tono y la persistencia de ajustes.
 """
 
-import os
 try:
     from logHandler import log
 except ImportError:
@@ -70,6 +69,7 @@ class EqualizerController:
             log.warning("AudioEqualizer: Motor de audio no disponible.")
             if notify_user:
                 def _prompt_install():
+                    """Lanza el asistente de descarga de Equalizer APO en el hilo principal de wx."""
                     from . import downloader
                     downloader.start_apo_download_flow()
                 wx.CallAfter(_prompt_install)
@@ -277,6 +277,7 @@ class EqualizerController:
             return
 
         def _run_gui():
+            """Abre la ventana de ajustes del ecualizador, o trae al frente la ventana ya abierta si existe."""
             if self._dialog_instance is not None:
                 try:
                     if bool(self._dialog_instance):

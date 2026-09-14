@@ -10,7 +10,6 @@ Cada perfil incluye su configuración acústica óptima completa:
 - Controles de tono rápido (tone_bass, tone_treble)
 """
 
-from . import constants
 
 PREDEFINED_PROFILES = [
     {

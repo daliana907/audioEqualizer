@@ -19,9 +19,9 @@ except ImportError:
     import logging
     log = logging.getLogger("audioEqualizer")
 
-from . import constants
 
 def _get_log_file_path() -> str:
+    """Devuelve la ruta del archivo de auditoría audioEqualizer.log dentro de la carpeta de configuración activa de NVDA."""
     try:
         import globalVars
         return os.path.join(globalVars.appArgs.configPath, "audioEqualizer.log")
@@ -83,6 +83,7 @@ def write_audit_log(
         ])
 
         def _check(name: str, active: bool, directive: str):
+            """Formatea una línea de auditoría indicando si el filtro está aplicado o inactivo."""
             if active:
                 return f"  * {name}: [EFECTO REAL: APLICADO] -> {directive}"
             return f"  * {name}: [INACTIVO: NO MARCADO]"

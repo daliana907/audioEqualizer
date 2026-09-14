@@ -332,6 +332,7 @@ class EqualizerDialog(wx.Dialog):
         self.Bind(wx.EVT_WINDOW_DESTROY, self._on_window_destroy)
 
     def _update_balance_name(self):
+        """Actualiza el nombre accesible del slider de balance según si está centrado, a la izquierda o a la derecha."""
         val = self._balance_slider.GetValue()
         if val == 0:
             txt = "centrado"
@@ -342,11 +343,13 @@ class EqualizerDialog(wx.Dialog):
         self._balance_slider.SetName(f"Balance estéreo, {txt}")
 
     def _on_balance_scroll(self, event):
+        """Maneja el desplazamiento del slider de balance: actualiza el nombre accesible y aplica el cambio."""
         self._update_balance_name()
         self._on_apply(event)
         event.Skip()
 
     def _update_width_name(self):
+        """Actualiza el nombre accesible del slider de ancho estéreo con la descripción del modo actual."""
         val = self._width_slider.GetValue()
         if val == 0:
             txt = "0 por ciento, modo mono"
@@ -359,6 +362,7 @@ class EqualizerDialog(wx.Dialog):
         self._width_slider.SetName(f"Ancho estéreo, {txt}")
 
     def _on_width_scroll(self, event):
+        """Maneja el desplazamiento del slider de ancho estéreo: anuncia el valor por voz y aplica el cambio."""
         self._update_width_name()
         val = self._width_slider.GetValue()
         ui.message(f"Ancho estéreo: {val}%")
@@ -366,22 +370,25 @@ class EqualizerDialog(wx.Dialog):
         event.Skip()
 
     def _update_tone_names(self):
+        """Actualiza los nombres accesibles de los sliders de graves y agudos con sus valores en dB."""
         b_val = self._tone_bass_slider.GetValue()
         self._tone_bass_slider.SetName(f"Graves rápidos, {b_val} decibelios")
         t_val = self._tone_treble_slider.GetValue()
         self._tone_treble_slider.SetName(f"Agudos rápidos, {t_val} decibelios")
 
     def _on_tone_scroll(self, event):
+        """Maneja el desplazamiento de los sliders de tono rápido: actualiza nombres accesibles y aplica el cambio."""
         self._update_tone_names()
         self._on_apply(event)
         event.Skip()
 
     def _refresh_profiles_list(self):
+        """Recarga la lista desplegable de perfiles desde el disco, preservando la selección actual cuando es posible."""
         user_profs = config.load_user_profiles()
         choice_items = list(profiles.PROFILE_NAMES) + ["Personalizado"]
         for up in user_profs:
             choice_items.append(f"Usuario: {up['name']}")
-        
+
         current_sel = self._profile_choice.GetSelection() if hasattr(self, "_profile_choice") and self._profile_choice else 0
         self._profile_choice.Clear()
         for item in choice_items:
@@ -393,6 +400,7 @@ class EqualizerDialog(wx.Dialog):
         self._update_profile_buttons_state()
 
     def _update_profile_buttons_state(self):
+        """Habilita o deshabilita el botón de borrado de perfil según si la selección actual es un perfil de usuario."""
         if not hasattr(self, "_delete_profile_btn") or not self._delete_profile_btn:
             return
         sel = self._profile_choice.GetSelection()
@@ -400,6 +408,7 @@ class EqualizerDialog(wx.Dialog):
         self._delete_profile_btn.Enable(is_user_profile)
 
     def _on_save_profile_as(self, event):
+        """Solicita un nombre al usuario y guarda el perfil actual como perfil personalizado en disco."""
         try:
             dlg = wx.TextEntryDialog(
                 self,
@@ -432,6 +441,7 @@ class EqualizerDialog(wx.Dialog):
             ui.message(f"Error al guardar perfil: {e}")
 
     def _on_delete_profile(self, event):
+        """Solicita confirmación y elimina el perfil de usuario seleccionado de la lista y del disco."""
         try:
             sel = self._profile_choice.GetSelection()
             if sel <= profiles.CUSTOM_INDEX:
@@ -460,11 +470,13 @@ class EqualizerDialog(wx.Dialog):
             ui.message(f"Error al eliminar perfil: {e}")
 
     def _on_test_audio(self, event):
+        """Lanza la prueba de canales de audio izquierdo, derecho y centro estéreo."""
         from . import channel_tester
         ui.message("Iniciando prueba: Canal izquierdo... Canal derecho... Centro estéreo.")
         channel_tester.play_channel_test()
 
     def _apply_profile_to_ui(self, prof_index):
+        """Carga los valores de un perfil predefinido o de usuario en todos los controles del diálogo."""
         if prof_index < profiles.CUSTOM_INDEX:
             prof = profiles.PREDEFINED_PROFILES[prof_index]
         elif prof_index > profiles.CUSTOM_INDEX:
@@ -514,6 +526,7 @@ class EqualizerDialog(wx.Dialog):
         self._update_profile_buttons_state()
 
     def _on_profile_choice(self, event):
+        """Aplica el perfil elegido en la lista desplegable, anuncia el nombre del perfil y actualiza los botones."""
         idx = self._profile_choice.GetSelection()
         self._apply_profile_to_ui(idx)
         self._on_apply(event)
@@ -524,6 +537,7 @@ class EqualizerDialog(wx.Dialog):
         event.Skip()
 
     def _on_band_slider_scroll(self, event, slider, f_txt):
+        """Maneja el desplazamiento de un slider de banda EQ: actualiza su nombre accesible y aplica el cambio."""
         val = slider.GetValue()
         slider.SetName(f"{f_txt}, ganancia, {val} decibelios")
         sel = self._profile_choice.GetSelection()
@@ -534,12 +548,14 @@ class EqualizerDialog(wx.Dialog):
         event.Skip()
 
     def _on_preamp_scroll(self, event):
+        """Maneja el desplazamiento del slider de preamplificación: actualiza el nombre accesible y aplica el cambio."""
         val = self._preamp_slider.GetValue()
         self._preamp_slider.SetName(f"Preamplificación, {val} decibelios")
         self._on_apply(event)
         event.Skip()
 
     def _on_auto_preamp_check(self, event):
+        """Habilita o deshabilita el slider de preamplificación según si el automático está marcado."""
         is_auto = self._auto_preamp_cb.GetValue()
         self._preamp_slider.Enable(not is_auto)
         self._on_apply(event)
@@ -679,6 +695,7 @@ class EqualizerDialog(wx.Dialog):
             ui.message(f"Error al restablecer valores: {e}")
 
     def _on_view_log(self, event):
+        """Abre el archivo de auditoría audioEqualizer.log con el programa predeterminado del sistema."""
         try:
             logger.open_log_file()
         except Exception as e:

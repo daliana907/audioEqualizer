@@ -1,18 +1,21 @@
-# Audio Equalizer para NVDA
+# Ecualizador de Audio para NVDA (Audio Equalizer)
 
-Autora: Daliana
-Versión: 1.3.0
-Compatibilidad: NVDA 2023.1 en adelante
-Licencia: GNU GPL v2
+- Autora: Daliana
+- Versión: 1.3.0
+- Compatibilidad: NVDA 2023.1 en adelante
+- Licencia: GNU GPL v2
 
-Este complemento añade un ecualizador de 31 bandas para calibrar el sonido de Windows con NVDA de forma completamente accesible. Puedes ajustar graves y agudos al instante, elegir o crear perfiles de sonido, corregir el balance de auriculares y aplicar filtros para mejorar la claridad de la voz del lector de pantalla o descansar el oído en sesiones largas.
+[Read in English](../en/readme.md)
 
-## Requisitos y funcionamiento
+---
 
-El ecualizador aplica los ajustes directamente a través de Equalizer APO, un motor de sonido para Windows que procesa el audio en tiempo real sin retrasos ni distorsión.
+## Versión en Español
 
-- Para que funcione, necesitas tener instalado Equalizer APO en el equipo.
-- Si todavía no lo tienes instalado, el complemento lo detecta solo al abrirlo y te ofrece descargarlo en tu carpeta de descargas según tu versión de Windows (de 32 o 64 bits). Al terminar la descarga, podrás abrir el instalador y seguir los pasos normales.
+El Ecualizador de Audio te permite mejorar y calibrar la calidad del sonido en Windows directamente desde NVDA. Puedes ajustar graves, medios y agudos, elegir perfiles listos para música, películas o juegos, regular el volumen de entrada, mejorar la claridad de la voz de NVDA y aplicar filtros diseñados especialmente para escuchar con auriculares cómodamente y sin fatiga.
+
+### Motor de audio necesario (Equalizer APO)
+Para aplicar los efectos en el sistema, este complemento utiliza **Equalizer APO**, un motor de procesamiento de audio libre y gratuito para Windows:
+- Si no lo tienes instalado, la primera vez que abras el complemento te ofrecerá descargarlo e instalarlo de forma automática y guiada.
 - También puedes descargarlo cuando quieras desde el menú de NVDA > Herramientas > Ecualizador de Audio > Descargar e instalar motor de audio (Equalizer APO)... o desde su página web oficial: https://sourceforge.net/projects/equalizerapo/
 
 ## Atajos de teclado y personalización
@@ -22,6 +25,7 @@ Para no interferir con las órdenes nativas de NVDA ni con otros complementos (c
 Puedes abrir todas sus funciones directamente desde el menú de NVDA > Herramientas > Ecualizador de Audio, o bien asignar tus combinaciones preferidas en el menú de NVDA > Preferencias > Gestos de entrada, dentro de la categoría "Ecualizador de audio".
 
 Entre las acciones que puedes asignar se encuentran:
+
 - Subir y bajar graves rápidos (pasos de 1 dB).
 - Subir y bajar agudos rápidos (pasos de 1 dB).
 - Subir y bajar la preamplificación (pasos de 1 dB).
@@ -49,23 +53,42 @@ Un deslizador para ajustar el volumen general de entrada y una casilla de preamp
 ### Balance y ajustes estéreo
 Controles para forzar sonido en mono, invertir canales izquierdo y derecho, ajustar el balance hacia un lado u otro y regular la amplitud estéreo desde un sonido cerrado hasta una imagen más amplia.
 
-### Filtros para auriculares y claridad
-Casillas opcionales pensadas para el uso con auriculares o sintetizadores de voz:
-- Modo Loudness para compensar la pérdida de graves y agudos cuando escuchas a poco volumen.
-- Claridad para la voz de NVDA y realce de presencia vocal para que el lector de pantalla y las conversaciones se entiendan con nitidez.
-- Filtro anti-sibilancia para suavizar las eses molestas y filtro anti-fatiga auditiva para reducir el cansancio en los oídos.
-- Filtro contra zumbidos eléctricos de red (50 y 60 Hz).
-- Refuerzo de subgraves profundos y corte subsónico para limpiar frecuencias inaudibles.
+### Filtros especiales para auriculares
+Casillas opcionales pensadas para el uso con auriculares o salas silenciosas:
 
-### Ecualizador de 31 bandas
-Treinta y un deslizadores accesibles desde 20 Hz hasta 20 kHz para ajustar cada rango de frecuencia de forma independiente entre -12 dB y +12 dB.
+- Modo Loudness para compensar la pérdida de graves y agudos al escuchar a volumen bajo.
+- Claridad de la voz de NVDA para hacer al lector más nítido sobre música de fondo.
+- Presencia vocal para resaltar voces en llamadas, audiolibros o podcasts.
+- Filtro anti-fatiga para sesiones largas de escucha.
+- Filtro anti-sibilancia para suavizar las eses molestas.
+- Refuerzo de subgraves para auriculares con pocos bajos.
+- Filtro subsónico para eliminar ruidos de fondo inaudibles que saturan los altavoces.
+- Filtro anti-zumbido eléctrico para limpiar interferencias de corriente de 50 o 60 Hz.
 
 ### Herramientas y diagnóstico
-- Botón Ver registro: muestra los cambios técnicos aplicados en Equalizer APO para comprobar que el motor está respondiendo.
+
+- Botón Ver registro: muestra los cambios aplicados en el archivo de configuración de Equalizer APO para comprobar su funcionamiento.
 - Detección de conflictos: disponible en el menú de Herramientas de NVDA para avisarte si algún atajo configurado coincide con otro complemento.
+
+---
+
+## Novedades de la versión 1.3.1 (13 de septiembre de 2026)
+
+- Mayor ligereza del complemento: se eliminaron dependencias internas que ya no se utilizaban en 5 módulos, reduciendo el código cargado por NVDA al arrancar.
+- Documentación técnica interna completa de todos los controles de la ventana de ajustes, el diálogo de descarga, los perfiles de sonido y el generador de tonos de prueba.
 
 ## Novedades de la versión 1.3.0 (13 de septiembre de 2026)
 
-- Se corrigió la orden que amplía el campo estéreo para asegurar que el motor de sonido siempre acepte los valores superiores al 100 % sin fallar.
-- La protección automática contra distorsión (preamp) ahora calcula la suma de refuerzos graves y agudos combinados para evitar saturaciones y chasquidos en la tarjeta de sonido.
-- Al retocar una frecuencia en un perfil guardado propio, la ventana mantiene activo tu perfil en lugar de saltar al perfil genérico.
+- Corrección en la ampliación del sonido estéreo: si subías el ancho estéreo por encima del 100%, el sonido se cancelaba por un error de cálculo y solo se escuchaba por el auricular derecho. Ahora el efecto estéreo se amplía de manera limpia y equilibrada por ambos auriculares sin perder volumen ni calidad.
+- Control de volumen automático más inteligente: al combinar varios ajustes y frecuencias a la vez, el complemento calcula con exactitud la ganancia total para que el sonido nunca sature ni distorsione, protegiendo tus oídos y tus auriculares.
+- Conservación de tus ajustes al cambiar frecuencias: al subir o bajar los graves o agudos con las teclas rápidas, no se borran los demás valores que tenías configurados en tu ecualizador.
+- Guardado seguro de perfiles: tus configuraciones se guardan de forma instantánea y protegida para evitar que se pierdan o dañen si el ordenador se apaga inesperadamente.
+- Verificación automática de perfiles guardados: si un perfil guardado estuviera incompleto o dañado, el complemento lo detecta y restaura los valores seguros para que nunca te quedes sin sonido.
+- Descarga guiada de Equalizer APO más fiable: la descarga del instalador desde el menú ahora se realiza en bloques continuos, informando del progreso y recuperándose de cortes temporales en la conexión de internet.
+- Prueba de orientación de auriculares mejorada: los tonos de comprobación para canal izquierdo, derecho y centro ahora suenan de forma suave, sin chasquidos molestos y sin reproducir el sonido predeterminado de Windows si los auriculares están ocupados.
+- Mayor estabilidad en la ventana de ajustes: se corrigieron errores que podían ocurrir al cerrar rápidamente la ventana mientras se aplicaban cambios de sonido.
+- Desinstalación limpia: al desinstalar o actualizar el complemento, el sistema elimina automáticamente todos los archivos temporales sin dejar residuos en el equipo.
+
+### Créditos y Agradecimientos
+- Motor de procesamiento de audio: Basado en Equalizer APO, creado por jthedering y colaboradores bajo licencia GNU GPL.
+- Complemento para NVDA: Desarrollado por Daliana.

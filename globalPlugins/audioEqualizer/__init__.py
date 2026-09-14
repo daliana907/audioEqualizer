@@ -17,7 +17,6 @@ from scriptHandler import script
 import addonHandler
 import wx
 import gui
-import os
 
 from . import config
 from .equalizer import EqualizerController

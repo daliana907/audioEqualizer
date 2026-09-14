@@ -15,6 +15,7 @@ class DummyBackend(AudioBackend):
     """Backend simulado en memoria para entornos de pruebas automatizadas o sin Equalizer APO instalado."""
 
     def __init__(self):
+        """Inicializa el estado interno del backend simulado: ecualizador desactivado, 31 ganancias a cero y preamp a 0 dB."""
         self._enabled = False
         self._gains = [0.0] * 31
         self._preamp = 0.0

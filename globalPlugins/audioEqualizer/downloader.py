@@ -11,11 +11,9 @@ del usuario (comprobando integridad mínima en bytes), y guía paso a paso al us
 """
 
 import os
-import sys
 import platform
 import threading
 import urllib.request
-import time
 
 try:
     import wx
@@ -145,6 +143,7 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
     e informa periódicamente por voz el avance.
     """
     def __init__(self, parent, info: dict, target_path: str, on_finished):
+        """Construye la ventana de descarga, inicializa la barra de progreso y conecta los eventos de cancelación."""
         if not wx:
             return
         super().__init__(
@@ -155,7 +154,7 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
         )
         self.SetAffirmativeId(wx.ID_NONE)
         self.SetEscapeId(wx.ID_CANCEL)
-        
+
         self._info = info
         self._target_path = target_path
         self._tmp_path = target_path + ".tmp"
@@ -163,38 +162,38 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
         self._is_cancelled = False
         self._download_thread = None
         self._last_spoken_percent = -1
-        
+
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        
+
         # Etiqueta explicativa
         self._lbl_desc = wx.StaticText(
             panel,
             label=f"Descargando {info['filename']} para Windows de {info['arch_label']}...\nPor favor, espera unos momentos."
         )
         sizer.Add(self._lbl_desc, 0, wx.ALL | wx.EXPAND, 15)
-        
+
         # Barra de progreso
         self._gauge = wx.Gauge(panel, range=100, style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
         sizer.Add(self._gauge, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 15)
-        
+
         # Texto de estado
         self._lbl_status = wx.StaticText(
             panel,
             label="Iniciando conexión con el servidor..."
         )
         sizer.Add(self._lbl_status, 0, wx.ALL | wx.EXPAND, 15)
-        
+
         # Botón Cancelar
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self._btn_cancel = wx.Button(panel, id=wx.ID_CANCEL, label="&Cancelar")
         btn_sizer.Add(self._btn_cancel, 0, wx.ALIGN_CENTER)
         sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.BOTTOM, 15)
-        
+
         panel.SetSizer(sizer)
         self.Bind(wx.EVT_BUTTON, self._on_cancel, id=wx.ID_CANCEL)
         self.Bind(wx.EVT_CLOSE, self._on_close)
-        
+
         self.CenterOnScreen()
 
     def start(self):
@@ -204,12 +203,15 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
         self.ShowModal()
 
     def _on_cancel(self, evt):
+        """Maneja el clic en el botón Cancelar delegando en _cancel."""
         self._cancel()
 
     def _on_close(self, evt):
+        """Maneja el cierre de la ventana por el usuario delegando en _cancel."""
         self._cancel()
 
     def _cancel(self):
+        """Marca la descarga como cancelada, limpia el archivo temporal y cierra la ventana."""
         if not self._is_cancelled:
             self._is_cancelled = True
             self._lbl_status.SetLabel("Cancelando descarga...")
@@ -222,6 +224,7 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
             wx.CallAfter(self._close_with_result, False, "Descarga cancelada por el usuario.")
 
     def _update_progress(self, downloaded_bytes, total_bytes):
+        """Actualiza la barra de progreso y anuncia por voz los hitos del 25%, 50%, 75% y 100%."""
         if self._is_cancelled:
             return
         if total_bytes > 0:
@@ -232,7 +235,7 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
             status_str = f"Descargado: {mb_down:.1f} MB de {mb_tot:.1f} MB ({percent}%)"
             self._gauge.SetValue(percent)
             self._lbl_status.SetLabel(status_str)
-            
+
             # Anunciar por voz los hitos de descarga
             if percent in (25, 50, 75, 100) and percent != self._last_spoken_percent:
                 self._last_spoken_percent = percent
@@ -243,10 +246,11 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
             self._lbl_status.SetLabel(f"Descargado: {mb_down:.1f} MB...")
 
     def _download_worker(self):
+        """Descarga el instalador en un hilo en segundo plano, verificando integridad mínima en bytes."""
         url = self._info["url"]
         headers = {"User-Agent": "Wget/1.20.3 (mingw32)"}
         req = urllib.request.Request(url, headers=headers)
-        
+
         try:
                 try:
                     total_bytes = int(resp.headers.get("Content-Length", 0) or 0)
@@ -254,7 +258,7 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
                     total_bytes = 0
                 downloaded_bytes = 0
                 chunk_size = 64 * 1024
-                
+
                 os.makedirs(os.path.dirname(self._tmp_path), exist_ok=True)
                 with open(self._tmp_path, "wb") as f:
                     while True:
@@ -266,22 +270,22 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
                         f.write(chunk)
                         downloaded_bytes += len(chunk)
                         wx.CallAfter(self._update_progress, downloaded_bytes, total_bytes)
-                
+
                 if self._is_cancelled:
                     return
-                
+
                 if downloaded_bytes < self._info.get("min_expected_bytes", 5000000):
                     raise IOError(f"El archivo descargado está incompleto ({downloaded_bytes} bytes recibidos).")
-                
+
                 if os.path.exists(self._target_path):
                     try:
                         os.remove(self._target_path)
                     except Exception:
                         pass
                 os.replace(self._tmp_path, self._target_path)
-                
+
                 wx.CallAfter(self._close_with_result, True, None)
-                
+
         except Exception as e:
             log.error(f"AudioEqualizer: Error durante la descarga: {e}", exc_info=True)
             try:
@@ -293,6 +297,7 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
                 wx.CallAfter(self._close_with_result, False, str(e))
 
     def _close_with_result(self, success: bool, error_msg: str):
+        """Destruye la ventana modal y llama al callback on_finished con el resultado de la descarga."""
         try:
             self.Destroy()
         except Exception:

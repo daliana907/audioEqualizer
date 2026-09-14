@@ -73,6 +73,7 @@ class EqualizerProfile:
         gains: List[float] = None,
         profile_index: int = 0,
     ):
+        """Inicializa el perfil con todos los parámetros acústicos, usando los valores por defecto de constants cuando no se especifican."""
         self._enabled = bool(enabled)
         self._preamp = float(preamp)
         self.auto_preamp = bool(auto_preamp)
@@ -92,7 +93,7 @@ class EqualizerProfile:
         self.stereo_width = int(stereo_width)
         self._profile_index = int(profile_index)
         self._gains = list(constants.DEFAULT_GAINS)
-        
+
         if gains is not None:
             self.gains = gains
 
