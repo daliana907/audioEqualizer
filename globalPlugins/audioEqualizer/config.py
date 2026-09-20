@@ -347,7 +347,11 @@ def load_user_profiles() -> List[Dict[str, Any]]:
         with open(USER_PROFILES_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
             if isinstance(data, list):
-                return data
+                valid_profiles = []
+                for p in data:
+                    if isinstance(p, dict) and isinstance(p.get("name"), str) and p.get("name").strip():
+                        valid_profiles.append(p)
+                return valid_profiles
     except Exception as e:
         log.error(f"AudioEqualizer: Error al cargar perfiles de usuario: {e}", exc_info=True)
         try:

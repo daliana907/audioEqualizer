@@ -28,6 +28,8 @@ sys.modules['scriptHandler'] = mock_sh
 mock_ah = types.ModuleType('addonHandler')
 mock_ah.initTranslation = lambda *a, **k: None
 sys.modules['addonHandler'] = mock_ah
+import builtins
+builtins._ = lambda x: x
 
 for mod_name in ['ui', 'speech', 'gui']:
     if mod_name not in sys.modules:
@@ -46,16 +48,16 @@ class TestDownloader(unittest.TestCase):
         with patch.dict(os.environ, {"PROCESSOR_ARCHITECTURE": "AMD64"}):
             info = downloader.get_apo_download_info()
             self.assertEqual(info["arch"], "64")
-            self.assertEqual(info["filename"], "EqualizerAPO64-1.3.exe")
-            self.assertTrue(info["url"].endswith("EqualizerAPO64-1.3.exe"))
+            self.assertEqual(info["filename"], "EqualizerAPO-x64-1.4.2.exe")
+            self.assertTrue(info["url"].endswith("EqualizerAPO-x64-1.4.2.exe"))
 
     def test_get_apo_download_info_32(self):
         with patch.dict(os.environ, {"PROCESSOR_ARCHITECTURE": "x86"}, clear=True), \
              patch("platform.machine", return_value="x86"):
             info = downloader.get_apo_download_info()
             self.assertEqual(info["arch"], "32")
-            self.assertEqual(info["filename"], "EqualizerAPO32-1.3.exe")
-            self.assertTrue(info["url"].endswith("EqualizerAPO32-1.3.exe"))
+            self.assertEqual(info["filename"], "EqualizerAPO-x86-1.4.2.exe")
+            self.assertTrue(info["url"].endswith("EqualizerAPO-x86-1.4.2.exe"))
 
     def test_get_downloads_dir(self):
         d = downloader.get_downloads_dir()

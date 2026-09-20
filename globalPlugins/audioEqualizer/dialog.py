@@ -11,6 +11,9 @@ y porcentajes para que el sintetizador de voz lo verbalice de inmediato al inter
 Permite gestionar perfiles (guardar, eliminar y cargar), activar filtros acústicos biquad,
 controlar el balance suave y el ancho estéreo Mid/Side, y escuchar los cambios en tiempo real.
 """
+import addonHandler
+addonHandler.initTranslation()
+
 
 import wx
 import ui
@@ -138,12 +141,12 @@ class EqualizerDialog(wx.Dialog):
 
         self._loudness_cb = wx.CheckBox(scroll_panel, label="&Loudness isofónico (Compensación para bajo volumen Fletcher-Munson)")
         self._loudness_cb.SetValue(self._profile.loudness)
-        self._loudness_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
+        self._loudness_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         opt_sizer.Add(self._loudness_cb, 0, wx.ALL, 4)
 
         self._ground_hum_cb = wx.CheckBox(scroll_panel, label="Filtro anti-&zumbido eléctrico (Notch 50 y 60 Hz, elimina ruidos de masa)")
         self._ground_hum_cb.SetValue(self._profile.ground_hum)
-        self._ground_hum_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
+        self._ground_hum_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         opt_sizer.Add(self._ground_hum_cb, 0, wx.ALL, 4)
 
 
@@ -234,32 +237,32 @@ class EqualizerDialog(wx.Dialog):
 
         self._subsonic_cb = wx.CheckBox(scroll_panel, label="Filtro subsó&nico infrasónico (Corta < 20 Hz, libera potencia en graves)")
         self._subsonic_cb.SetValue(self._profile.subsonic)
-        self._subsonic_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
+        self._subsonic_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         hp_sizer.Add(self._subsonic_cb, 0, wx.ALL, 4)
 
         self._nvda_voice_cb = wx.CheckBox(scroll_panel, label="Claridad para sintetizador de &voz (Optimiza NVDA, menos fatiga)")
         self._nvda_voice_cb.SetValue(self._profile.nvda_voice)
-        self._nvda_voice_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
+        self._nvda_voice_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         hp_sizer.Add(self._nvda_voice_cb, 0, wx.ALL, 4)
 
         self._sub_bass_cb = wx.CheckBox(scroll_panel, label="E&xtensión de subgraves profundos (+6 dB en 70 Hz para drivers 50-53 mm)")
         self._sub_bass_cb.SetValue(self._profile.sub_bass)
-        self._sub_bass_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
+        self._sub_bass_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         hp_sizer.Add(self._sub_bass_cb, 0, wx.ALL, 4)
 
         self._clarity_cb = wx.CheckBox(scroll_panel, label="Realce de clari&dad y presencia (+5.5 dB en 5.5 kHz, voz y brillo nítidos)")
         self._clarity_cb.SetValue(self._profile.clarity)
-        self._clarity_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
+        self._clarity_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         hp_sizer.Add(self._clarity_cb, 0, wx.ALL, 4)
 
-        self._anti_sibilance_cb = wx.CheckBox(scroll_panel, label="Filtro anti-&sibilancia (-5 dB en 7.5 kHz, suaviza seseo y estridencias)")
+        self._anti_sibilance_cb = wx.CheckBox(scroll_panel, label="Filtro anti-&sibilancia (recorte fijo y constante de -5 dB en 7.5 kHz, suaviza seseo y estridencias)")
         self._anti_sibilance_cb.SetValue(self._profile.anti_sibilance)
-        self._anti_sibilance_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
+        self._anti_sibilance_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         hp_sizer.Add(self._anti_sibilance_cb, 0, wx.ALL, 4)
 
-        self._anti_fatigue_cb = wx.CheckBox(scroll_panel, label="Filtro anti-&fatiga auditiva (-4.5 dB en 14 kHz, sonido cálido relajante)")
+        self._anti_fatigue_cb = wx.CheckBox(scroll_panel, label="Filtro anti-&fatiga auditiva (recorte fijo y constante de -4.5 dB en 14 kHz, sonido cálido relajante)")
         self._anti_fatigue_cb.SetValue(self._profile.anti_fatigue)
-        self._anti_fatigue_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
+        self._anti_fatigue_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         hp_sizer.Add(self._anti_fatigue_cb, 0, wx.ALL, 4)
 
 
@@ -361,11 +364,27 @@ class EqualizerDialog(wx.Dialog):
             txt = f"{val} por ciento, estéreo estrecho"
         self._width_slider.SetName(f"Ancho estéreo, {txt}")
 
+    def _mark_custom_profile(self):
+        """Si se modifica un parámetro acústico del perfil y no estamos en Personalizado, pasa la selección a Personalizado."""
+        if hasattr(self, "_profile_choice") and self._profile_choice:
+            sel = self._profile_choice.GetSelection()
+            if sel < profiles.CUSTOM_INDEX:
+                self._profile_choice.SetSelection(profiles.CUSTOM_INDEX)
+                self._update_profile_buttons_state()
+
+    def _on_enhancement_check(self, event):
+        """Maneja la conmutación de cualquier mejora acústica del perfil."""
+        self._mark_custom_profile()
+        self._on_apply(event)
+        if event and hasattr(event, "Skip"):
+            event.Skip()
+
     def _on_width_scroll(self, event):
         """Maneja el desplazamiento del slider de ancho estéreo: anuncia el valor por voz y aplica el cambio."""
         self._update_width_name()
+        self._mark_custom_profile()
         val = self._width_slider.GetValue()
-        ui.message(f"Ancho estéreo: {val}%")
+        ui.message(_("Ancho estéreo: {val}%").format(val=val))
         self._on_apply(event)
         event.Skip()
 
@@ -379,6 +398,7 @@ class EqualizerDialog(wx.Dialog):
     def _on_tone_scroll(self, event):
         """Maneja el desplazamiento de los sliders de tono rápido: actualiza nombres accesibles y aplica el cambio."""
         self._update_tone_names()
+        self._mark_custom_profile()
         self._on_apply(event)
         event.Skip()
 
@@ -387,7 +407,9 @@ class EqualizerDialog(wx.Dialog):
         user_profs = config.load_user_profiles()
         choice_items = list(profiles.PROFILE_NAMES) + ["Personalizado"]
         for up in user_profs:
-            choice_items.append(f"Usuario: {up['name']}")
+            p_name = up.get("name") if isinstance(up, dict) else ""
+            if p_name:
+                choice_items.append(f"Usuario: {p_name}")
 
         current_sel = self._profile_choice.GetSelection() if hasattr(self, "_profile_choice") and self._profile_choice else 0
         self._profile_choice.Clear()
@@ -419,7 +441,7 @@ class EqualizerDialog(wx.Dialog):
             if dlg.ShowModal() == wx.ID_OK:
                 name = dlg.GetValue().strip()
                 if not name:
-                    ui.message("El nombre del perfil no puede estar vacío.")
+                    ui.message(_("El nombre del perfil no puede estar vacío."))
                     dlg.Destroy()
                     return
                 self._sync_profile_from_ui()
@@ -431,14 +453,14 @@ class EqualizerDialog(wx.Dialog):
                     self._profile_choice.SetSelection(new_idx)
                     self._profile.profile_index = new_idx
                     self._update_profile_buttons_state()
-                    ui.message(f"Perfil '{name}' guardado correctamente.")
+                    ui.message(_("Perfil '{name}' guardado correctamente.").format(name=name))
                 else:
-                    ui.message("Error al guardar el perfil personalizado.")
+                    ui.message(_("Error al guardar el perfil personalizado."))
             dlg.Destroy()
         except Exception as e:
             log.error(f"AudioEqualizer: Error al guardar perfil personalizado: {e}", exc_info=True)
             logger.log_error(f"Error al guardar perfil personalizado: {e}", exc=e, component="EqualizerDialog")
-            ui.message(f"Error al guardar perfil: {e}")
+            ui.message(_("Error al guardar perfil: {e}").format(e=e))
 
     def _on_delete_profile(self, event):
         """Solicita confirmación y elimina el perfil de usuario seleccionado de la lista y del disco."""
@@ -449,7 +471,10 @@ class EqualizerDialog(wx.Dialog):
             user_profs = config.load_user_profiles()
             user_idx = sel - profiles.CUSTOM_INDEX - 1
             if 0 <= user_idx < len(user_profs):
-                prof_name = user_profs[user_idx]["name"]
+                prof_entry = user_profs[user_idx]
+                prof_name = prof_entry.get("name") if isinstance(prof_entry, dict) else ""
+                if not prof_name:
+                    return
                 dlg = wx.MessageDialog(
                     self,
                     f"¿Estás seguro de que deseas eliminar el perfil '{prof_name}'?",
@@ -462,17 +487,17 @@ class EqualizerDialog(wx.Dialog):
                     self._profile_choice.SetSelection(0)
                     self._apply_profile_to_ui(0)
                     self._on_apply(None)
-                    ui.message(f"Perfil '{prof_name}' eliminado.")
+                    ui.message(_("Perfil '{prof_name}' eliminado.").format(prof_name=prof_name))
                 dlg.Destroy()
         except Exception as e:
             log.error(f"AudioEqualizer: Error al eliminar perfil personalizado: {e}", exc_info=True)
             logger.log_error(f"Error al eliminar perfil personalizado: {e}", exc=e, component="EqualizerDialog")
-            ui.message(f"Error al eliminar perfil: {e}")
+            ui.message(_("Error al eliminar perfil: {e}").format(e=e))
 
     def _on_test_audio(self, event):
         """Lanza la prueba de canales de audio izquierdo, derecho y centro estéreo."""
         from . import channel_tester
-        ui.message("Iniciando prueba: Canal izquierdo... Canal derecho... Centro estéreo.")
+        ui.message(_("Iniciando prueba: Canal izquierdo... Canal derecho... Centro estéreo."))
         channel_tester.play_channel_test()
 
     def _apply_profile_to_ui(self, prof_index):
@@ -502,6 +527,15 @@ class EqualizerDialog(wx.Dialog):
         if "preamp" in prof:
             self._preamp_slider.SetValue(int(round(prof["preamp"])))
             self._preamp_slider.SetName(f"Preamplificación, {int(round(prof['preamp']))} decibelios")
+            self._auto_preamp_cb.SetValue(bool(prof.get("auto_preamp", False)))
+        else:
+            # Ninguno de los perfiles de fábrica trae su propio valor de preamp seguro.
+            # Se activa el preamp automático para que Equalizer APO calcule uno seguro
+            # según este perfil, en vez de arrastrar el valor manual que hubiera quedado
+            # de un perfil anterior (que podía saturar el sonido con perfiles como
+            # "Más graves", que realza varias bandas sin ningún recorte que lo compense).
+            self._auto_preamp_cb.SetValue(True)
+        self._preamp_slider.Enable(not self._auto_preamp_cb.GetValue())
 
         # Controles de tono rápido del perfil
         self._tone_bass_slider.SetValue(int(round(prof.get("tone_bass", 0.0))))
@@ -533,17 +567,14 @@ class EqualizerDialog(wx.Dialog):
         self._update_profile_buttons_state()
         all_choices = self._profile_choice.GetStrings()
         if 0 <= idx < len(all_choices):
-            ui.message(f"Perfil: {all_choices[idx]}")
+            ui.message(_("Perfil: {choice}").format(choice=all_choices[idx]))
         event.Skip()
 
     def _on_band_slider_scroll(self, event, slider, f_txt):
         """Maneja el desplazamiento de un slider de banda EQ: actualiza su nombre accesible y aplica el cambio."""
         val = slider.GetValue()
         slider.SetName(f"{f_txt}, ganancia, {val} decibelios")
-        sel = self._profile_choice.GetSelection()
-        if sel < profiles.CUSTOM_INDEX:
-            self._profile_choice.SetSelection(profiles.CUSTOM_INDEX)
-            self._update_profile_buttons_state()
+        self._mark_custom_profile()
         self._on_apply(event)
         event.Skip()
 
@@ -605,16 +636,32 @@ class EqualizerDialog(wx.Dialog):
         """Aplica los cambios en tiempo real en Equalizer APO sin cerrar la ventana.
 
         Permite escuchar inmediatamente el resultado acústico mientras se ajustan los deslizadores.
+        Para que mover un control deslizante rápido no dispare una escritura en disco por cada
+        pasito (lo que podía trabar la ventana), se espera una fracción de segundo desde el
+        último movimiento antes de aplicar el cambio de verdad.
         """
+        if event and hasattr(event, "Skip"):
+            event.Skip()
+        if getattr(self, "_cleaned_up", False):
+            return
+        if getattr(self, "_apply_timer", None) is not None:
+            try:
+                self._apply_timer.Stop()
+            except Exception:
+                pass
+        self._apply_timer = wx.CallLater(120, self._do_apply_now)
+
+    def _do_apply_now(self):
+        """Aplica de verdad, en disco, el último estado de los controles tras la breve espera de _on_apply."""
+        if getattr(self, "_cleaned_up", False):
+            return
         try:
             self._sync_profile_from_ui()
             self._controller.apply_profile(self._profile, save=False)
         except Exception as e:
             log.error(f"AudioEqualizer: Error aplicando cambios desde la interfaz: {e}", exc_info=True)
             logger.log_error(f"Error aplicando cambios en GUI: {e}", exc=e, component="EqualizerDialog")
-            ui.message(f"Error al aplicar cambios: {e}")
-        if event and hasattr(event, "Skip"):
-            event.Skip()
+            ui.message(_("Error al aplicar cambios: {e}").format(e=e))
 
     def _on_ok(self, event=None):
         """Guarda permanentemente la configuración en NVDA y cierra la ventana."""
@@ -628,7 +675,7 @@ class EqualizerDialog(wx.Dialog):
                 logger.log_error(f"Error al guardar cambios en GUI (Aceptar): {e}", exc=e, component="EqualizerDialog")
             except Exception:
                 pass
-            ui.message(f"Error al guardar cambios: {e}")
+            ui.message(_("Error al guardar cambios: {e}").format(e=e))
 
     def _on_cancel(self, event=None):
         """Descarta las modificaciones temporales, restaura el estado previo y cierra la ventana."""
@@ -671,12 +718,8 @@ class EqualizerDialog(wx.Dialog):
             if prof_idx < profiles.CUSTOM_INDEX:
                 prof = profiles.PREDEFINED_PROFILES[prof_idx]
                 self._apply_profile_to_ui(prof_idx)
-                self._preamp_slider.SetValue(0)
-                self._preamp_slider.SetName("Preamplificación, 0 decibelios")
-                self._auto_preamp_cb.SetValue(False)
-                self._preamp_slider.Enable(True)
                 self._on_apply(event)
-                ui.message(f"Perfil '{prof['name']}' restablecido a sus valores originales")
+                ui.message(_("Perfil '{prof_name}' restablecido a sus valores originales").format(prof_name=prof['name']))
             else:
                 for i, s in enumerate(self._band_sliders):
                     s.SetValue(0)
@@ -688,11 +731,11 @@ class EqualizerDialog(wx.Dialog):
                 self._auto_preamp_cb.SetValue(False)
                 self._preamp_slider.Enable(True)
                 self._on_apply(event)
-                ui.message("Perfil personalizado restablecido a 0 dB")
+                ui.message(_("Perfil personalizado restablecido a 0 dB"))
         except Exception as e:
             log.error(f"AudioEqualizer: Error al restablecer perfil en GUI: {e}", exc_info=True)
             logger.log_error(f"Error al restablecer valores en GUI: {e}", exc=e, component="EqualizerDialog")
-            ui.message(f"Error al restablecer valores: {e}")
+            ui.message(_("Error al restablecer valores: {e}").format(e=e))
 
     def _on_view_log(self, event):
         """Abre el archivo de auditoría audioEqualizer.log con el programa predeterminado del sistema."""
@@ -700,7 +743,7 @@ class EqualizerDialog(wx.Dialog):
             logger.open_log_file()
         except Exception as e:
             log.error(f"AudioEqualizer: Error al abrir log: {e}", exc_info=True)
-            ui.message(f"No se pudo abrir el archivo de log: {e}")
+            ui.message(_("No se pudo abrir el archivo de log: {e}").format(e=e))
         if event and hasattr(event, "Skip"):
             event.Skip()
 
@@ -715,6 +758,11 @@ class EqualizerDialog(wx.Dialog):
         if getattr(self, "_cleaned_up", False):
             return
         self._cleaned_up = True
+        if getattr(self, "_apply_timer", None) is not None:
+            try:
+                self._apply_timer.Stop()
+            except Exception:
+                pass
         try:
             if self._controller and getattr(self._controller, "_dialog_instance", None) is self:
                 self._controller._dialog_instance = None

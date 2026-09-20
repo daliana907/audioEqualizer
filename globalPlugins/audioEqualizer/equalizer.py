@@ -10,6 +10,9 @@ de teclado de NVDA y el motor acústico de audio en segundo plano (Equalizer APO
 de la sincronización en tiempo real, el cálculo matemático del anticlíping automático,
 el cambio ordenado de perfiles, los controles de tono y la persistencia de ajustes.
 """
+import addonHandler
+addonHandler.initTranslation()
+
 
 try:
     from logHandler import log
@@ -23,6 +26,7 @@ import gui as nvda_gui
 
 from . import config
 from . import constants
+from . import profiles
 from .backend import AudioBackend
 from .dialog import EqualizerDialog
 
@@ -137,7 +141,7 @@ class EqualizerController:
             except Exception:
                 pass
             if notify_user:
-                ui.message(f"Error en parámetros del ecualizador: {ve}")
+                ui.message(_("Error en parámetros del ecualizador: {ve}").format(ve=ve))
             return False
         except RuntimeError as err:
             log.error(f"AudioEqualizer: Fallo en el motor: {err}", exc_info=True)
@@ -148,7 +152,7 @@ class EqualizerController:
             except Exception:
                 pass
             if notify_user:
-                ui.message(f"Fallo al aplicar ecualización en el sistema: {err}")
+                ui.message(_("Fallo al aplicar ecualización en el sistema: {err}").format(err=err))
             return False
         except Exception as e:
             log.error(f"AudioEqualizer: Error inesperado en el backend: {e}", exc_info=True)
@@ -159,7 +163,7 @@ class EqualizerController:
             except Exception:
                 pass
             if notify_user:
-                ui.message(f"Error inesperado en el ecualizador: {e}")
+                ui.message(_("Error inesperado en el ecualizador: {e}").format(e=e))
             return False
 
     def toggle_equalizer(self) -> None:
@@ -177,7 +181,7 @@ class EqualizerController:
         if success:
             config.save_profile(self._current_profile)
             estado = "activado" if new_state else "desactivado"
-            ui.message(f"Ecualizador {estado}")
+            ui.message(_("Ecualizador {estado}").format(estado=estado))
         else:
             self._current_profile.enabled = not new_state
 
@@ -191,6 +195,13 @@ class EqualizerController:
         target_profile.gains = list(preset_data["gains"])
         if "preamp" in preset_data:
             target_profile.preamp = float(preset_data["preamp"])
+            target_profile.auto_preamp = bool(preset_data.get("auto_preamp", False))
+        else:
+            # Ninguno de los perfiles de fábrica trae su propio valor de preamp seguro.
+            # Sin esto, si el preamp automático estaba apagado (como viene de fábrica),
+            # un perfil con bandas graves o agudas muy realzadas (p. ej. "Más graves")
+            # podía saturar el sonido en vez de sonar simplemente "con más grave".
+            target_profile.auto_preamp = True
         target_profile.tone_bass = float(preset_data.get("tone_bass", 0.0))
         target_profile.tone_treble = float(preset_data.get("tone_treble", 0.0))
         target_profile.sub_bass = bool(preset_data.get("sub_bass", False))
@@ -208,9 +219,14 @@ class EqualizerController:
 
         Lee el archivo JSON de perfiles personalizados del usuario en la carpeta de NVDA
         y los concatena al final de la lista de fábrica para que puedan recorrerse cíclicamente.
+
+        Deja un hueco (None) en la posición "Personalizado", justo como hace la lista
+        desplegable de la ventana de configuración, para que un mismo número de perfil
+        (profile_index) signifique siempre lo mismo se mire desde donde se mire.
         """
         from . import profiles
         all_profs = list(profiles.PREDEFINED_PROFILES)
+        all_profs.append(None)
         user_profs = config.load_user_profiles()
         all_profs.extend(user_profs)
         return all_profs
@@ -228,6 +244,14 @@ class EqualizerController:
         if num_profiles == 0:
             return
         new_idx = (self._current_profile.profile_index + delta) % num_profiles
+        if all_profs[new_idx] is None:
+            # Caímos justo en "Personalizado", que no es un perfil de verdad con
+            # valores propios para aplicar: seguimos un paso más en la misma
+            # dirección hasta el siguiente perfil real.
+            new_idx = (new_idx + delta) % num_profiles
+        if all_profs[new_idx] is None:
+            # Solo puede volver a pasar si no hay ningún perfil real disponible.
+            return
         self._current_profile.profile_index = new_idx
         prof = all_profs[new_idx]
         self._apply_preset_to_profile(self._current_profile, prof)
@@ -242,7 +266,7 @@ class EqualizerController:
                 except Exception as ex:
                     log.error(f"AudioEqualizer: Error actualizando UI tras cambiar de perfil: {ex}", exc_info=True)
                     self._dialog_instance = None
-            ui.message(f"Perfil: {prof['name']}")
+            ui.message(_("Perfil: {prof_name}").format(prof_name=prof['name']))
 
     def next_profile(self) -> None:
         """Avanza al siguiente perfil de ecualización disponible."""
@@ -320,7 +344,7 @@ class EqualizerController:
                     logger.log_error(f"Error al abrir interfaz gráfica: {e}", exc=e, component="EqualizerGUI")
                 except Exception:
                     pass
-                ui.message(f"Error al abrir la configuración del ecualizador: {e}")
+                ui.message(_("Error al abrir la configuración del ecualizador: {e}").format(e=e))
 
         wx.CallAfter(_run_gui)
 
@@ -349,13 +373,13 @@ class EqualizerController:
         efectivo y la lista exacta de filtros activos (por ejemplo: graves, claridad vocal,
         ancho estéreo al 120%), evitando dudas sobre qué está procesando el sonido.
         """
-        from . import logger, profiles
+        from . import logger
         all_profs = self._get_all_available_profiles()
         idx = self._current_profile.profile_index
         prof_name = ""
-        if 0 <= idx < len(all_profs):
+        if 0 <= idx < len(all_profs) and all_profs[idx] is not None:
             prof_name = all_profs[idx].get("name", "")
-        elif idx == len(profiles.PREDEFINED_PROFILES):
+        else:
             prof_name = "Personalizado"
         msg = logger.get_voice_summary(self._current_profile, prof_name)
         ui.message(msg)
@@ -382,7 +406,7 @@ class EqualizerController:
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando control de tono en GUI: {ex}", exc_info=True)
                 self._dialog_instance = None
-        ui.message(f"{label}: {new_val:+.1f} dB")
+        ui.message(_("{label}: {new_val:+.1f} dB").format(label=label, new_val=new_val))
 
     def adjust_tone_bass(self, delta: float) -> None:
         """Aumenta o disminuye los graves rápidos en pasos de 1 dB."""
@@ -399,13 +423,13 @@ class EqualizerController:
         y finalmente en el centro estéreo, avisando previamente al usuario por síntesis de voz.
         """
         from . import channel_tester
-        ui.message("Iniciando prueba: Canal izquierdo... Canal derecho... Centro estéreo.")
+        ui.message(_("Iniciando prueba: Canal izquierdo... Canal derecho... Centro estéreo."))
         channel_tester.play_channel_test()
 
     def adjust_preamp(self, delta: float) -> None:
         """Ajusta la preamplificación manual en pasos de 1 dB."""
         if self._current_profile.auto_preamp:
-            ui.message("El preamplificador automático está activado. Desactívalo para ajustar manualmente.")
+            ui.message(_("El preamplificador automático está activado. Desactívalo para ajustar manualmente."))
             return
         curr_val = self._current_profile.preamp
         new_val = max(constants.MIN_PREAMP, min(constants.MAX_PREAMP, round(curr_val + delta, 1)))
@@ -419,7 +443,7 @@ class EqualizerController:
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando preamp en GUI: {ex}", exc_info=True)
                 self._dialog_instance = None
-        ui.message(f"Preamplificación: {new_val:+.1f} dB")
+        ui.message(_("Preamplificación: {new_val:+.1f} dB").format(new_val=new_val))
 
     def toggle_auto_preamp(self) -> None:
         """Activa o desactiva la preamplificación automática anticlíping."""
@@ -435,7 +459,7 @@ class EqualizerController:
                 log.error(f"AudioEqualizer: Error actualizando auto_preamp en GUI: {ex}", exc_info=True)
                 self._dialog_instance = None
         estado = "activado" if new_state else "desactivado"
-        ui.message(f"Preamplificador automático anticlíping {estado}")
+        ui.message(_("Preamplificador automático anticlíping {estado}").format(estado=estado))
 
     def adjust_stereo_width(self, delta: int) -> None:
         """Ajusta el ancho estéreo en pasos porcentuales."""
@@ -451,7 +475,7 @@ class EqualizerController:
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando ancho estéreo en GUI: {ex}", exc_info=True)
                 self._dialog_instance = None
-        ui.message(f"Ancho estéreo: {new_val} %")
+        ui.message(_("Ancho estéreo: {new_val} %").format(new_val=new_val))
 
     def adjust_balance(self, delta: int) -> None:
         """Ajusta el balance estéreo (L/R) en pasos porcentuales."""
@@ -468,11 +492,11 @@ class EqualizerController:
                 log.error(f"AudioEqualizer: Error actualizando balance en GUI: {ex}", exc_info=True)
                 self._dialog_instance = None
         if new_val == 0:
-            ui.message("Balance estéreo: centrado")
+            ui.message(_("Balance estéreo: centrado"))
         elif new_val < 0:
-            ui.message(f"Balance estéreo: {abs(new_val)} % a la izquierda")
+            ui.message(_("Balance estéreo: {abs_val} % a la izquierda").format(abs_val=abs(new_val)))
         else:
-            ui.message(f"Balance estéreo: {new_val} % a la derecha")
+            ui.message(_("Balance estéreo: {new_val} % a la derecha").format(new_val=new_val))
 
     def center_balance(self) -> None:
         """Centra el balance estéreo."""
@@ -486,7 +510,7 @@ class EqualizerController:
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando balance en GUI: {ex}", exc_info=True)
                 self._dialog_instance = None
-        ui.message("Balance estéreo: centrado")
+        ui.message(_("Balance estéreo: centrado"))
 
     def _toggle_feature(self, attr_name: str, label_name: str) -> None:
         """Conmuta una opción booleana acústica, la guarda y la anuncia por voz."""
@@ -504,7 +528,7 @@ class EqualizerController:
                 log.error(f"AudioEqualizer: Error actualizando {attr_name} en GUI: {ex}", exc_info=True)
                 self._dialog_instance = None
         estado = "activado" if new_state else "desactivado"
-        ui.message(f"{label_name} {estado}")
+        ui.message(_("{label_name} {estado}").format(label_name=label_name, estado=estado))
 
     def toggle_mono(self) -> None:
         """Alterna el modo mono sumando ambos canales acústicos."""
@@ -559,7 +583,7 @@ class EqualizerController:
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando reset en GUI: {ex}", exc_info=True)
                 self._dialog_instance = None
-        ui.message("Ecualizador restablecido a respuesta plana (0 dB)")
+        ui.message(_("Ecualizador restablecido a respuesta plana (0 dB)"))
 
     def terminate(self) -> None:
         """Libera los recursos del backend de audio y cierra la GUI al cerrar o reiniciar NVDA."""

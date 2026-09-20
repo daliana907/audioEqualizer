@@ -59,11 +59,11 @@ Optional filters designed for headphone listening:
 - Loudness mode to restore bass and treble fullness at low volume levels.
 - NVDA voice clarity to make screen reader speech cut through background audio.
 - Vocal presence to highlight speech in calls and podcasts.
-- Anti-fatigue filter for extended listening sessions.
-- Anti-sibilance filter to soften harsh treble sounds.
+- Anti-fatigue filter for extended listening sessions (a fixed, constant treble cut — it doesn't adapt to the sound).
+- Anti-sibilance filter to soften harsh treble sounds (a fixed, constant cut at that frequency — it doesn't detect individual "s" sounds).
 - Deep bass boost for headphones lacking low-end punch.
 - Subsonic filter to remove inaudible low-frequency rumble.
-- Ground loop filter to eliminate 50/60 Hz electrical hum.
+- Ground loop filter to eliminate 50/60 Hz electrical hum and its 100/120 Hz echoes.
 
 ### Tools and Diagnostics
 
@@ -71,6 +71,18 @@ Optional filters designed for headphone listening:
 - Conflict detection tool in the Tools menu to identify overlapping shortcuts.
 
 ---
+
+## What's new in 1.4.0 (18 September 2026)
+
+- Restored Equalizer APO download: resolved an internal issue in the setup helper that prevented downloading the official installer from the add-on menu.
+- Preserved existing sound configurations: connecting Equalizer APO for the first time now preserves pre-existing settings from other devices or software, appending only the necessary include directive rather than overwriting the master configuration file.
+- Automatic volume protection for built-in presets: selecting presets with strong frequency boosts (such as Bass Boost) now engages automatic preamplification proactively to prevent audio distortion in headphones.
+- Smoother slider interaction: improved responsiveness when adjusting equalizer sliders rapidly, eliminating UI delays while audio commands are applied.
+- Accurate profile cycling via shortcut: cycling through saved presets with keyboard shortcuts now reliably applies the exact profile announced by voice and shown in the dialog.
+- Enhanced mains hum filtering: expanded electrical noise reduction to target 100 Hz and 120 Hz harmonic overtones in addition to the fundamental frequency.
+- Clarified voice filter behavior: updated descriptions for anti-sibilance and anti-fatigue filters to reflect their fixed band attenuation characteristics.
+- Updated installer package: the built-in installer download now points to current Equalizer APO version 1.4.2.
+- Verified audio command pipeline: comprehensive verification of 31-band controls, balance, mono, tone, and filter commands against Equalizer APO specifications.
 
 ## What's new in 1.3.1 (13 September 2026)
 

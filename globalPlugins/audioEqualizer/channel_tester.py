@@ -15,6 +15,9 @@ Crea de forma procedural un archivo WAV estéreo temporal de alta fidelidad con:
 Aplica una rampa de desvanecimiento suave (fade-in y fade-out) de 20 milisegundos para eliminar
 cualquier chasquido (pop) por discontinuidad de fase al arrancar o cortar la onda sonora.
 """
+import addonHandler
+addonHandler.initTranslation()
+
 
 import os
 import math
@@ -115,6 +118,9 @@ def generate_channel_test_wav(sample_rate: int = 44100) -> str:
     return _TEST_WAV_PATH
 
 
+_test_in_progress = threading.Lock()
+
+
 def play_channel_test() -> None:
     """Reproduce la prueba de canales de forma asíncrona en un hilo en segundo plano.
 
@@ -123,7 +129,13 @@ def play_channel_test() -> None:
     """
     if not winsound:
         log.warning("AudioEqualizer: Módulo winsound no disponible; omitiendo prueba de canales.")
-        ui.message("No se puede reproducir audio: winsound no está disponible.")
+        ui.message(_("No se puede reproducir audio: winsound no está disponible."))
+        return
+
+    if not _test_in_progress.acquire(blocking=False):
+        # Ya hay una prueba de canales en curso: si generáramos otra a la vez, ambas
+        # escribirían sobre el mismo archivo temporal al mismo tiempo y podrían dañarlo.
+        ui.message(_("Ya se está reproduciendo la comprobación de canales."))
         return
 
     def _worker():
@@ -135,10 +147,21 @@ def play_channel_test() -> None:
         except Exception as e:
             log.error(f"AudioEqualizer: Error reproduciendo comprobación de canales: {e}", exc_info=True)
             try:
+                if os.path.exists(_TEST_WAV_PATH):
+                    os.remove(_TEST_WAV_PATH)
+            except Exception:
+                pass
+            try:
                 from . import logger
                 logger.log_error(f"Error en reproducción de canales: {e}", exc=e, component="ChannelTester")
             except Exception:
                 pass
-            ui.message(f"Error al reproducir comprobación de canales: {e}")
+            try:
+                import core
+                core.callLater(0, ui.message, _("Error al reproducir comprobación de canales: {e}").format(e=e))
+            except Exception:
+                ui.message(_("Error al reproducir comprobación de canales: {e}").format(e=e))
+        finally:
+            _test_in_progress.release()
 
     threading.Thread(target=_worker, daemon=True).start()

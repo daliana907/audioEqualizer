@@ -9,6 +9,9 @@ Detecta la arquitectura del sistema operativo (32 o 64 bits) contemplando la emu
 gestiona la descarga oficial con ventana de espera y progreso accesible en la carpeta de Descargas
 del usuario (comprobando integridad mínima en bytes), y guía paso a paso al usuario con mensajes de voz.
 """
+import addonHandler
+addonHandler.initTranslation()
+
 
 import os
 import platform
@@ -74,27 +77,27 @@ def get_apo_download_info() -> dict:
     """Devuelve los metadatos y URL oficial de descarga de Equalizer APO según la arquitectura.
 
     Incluye el nombre de archivo, la URL directa en SourceForge y el umbral mínimo
-    esperado de bytes (alrededor de 7-8 MB) para evitar que una descarga cortada a medias
-    se confunda con un instalador válido.
+    esperado de bytes (bastante por debajo del tamaño real informado por SourceForge)
+    para evitar que una descarga cortada a medias se confunda con un instalador válido.
     """
     arch = get_system_arch()
     if arch == "64":
         return {
             "arch": "64",
             "arch_label": "64 bits (x64)",
-            "filename": "EqualizerAPO64-1.3.exe",
-            "url": "https://downloads.sourceforge.net/project/equalizerapo/1.3/EqualizerAPO64-1.3.exe",
-            "approx_size_mb": 8.7,
-            "min_expected_bytes": 7000000,
+            "filename": "EqualizerAPO-x64-1.4.2.exe",
+            "url": "https://downloads.sourceforge.net/project/equalizerapo/1.4.2/EqualizerAPO-x64-1.4.2.exe",
+            "approx_size_mb": 12.0,
+            "min_expected_bytes": 9000000,
         }
     else:
         return {
             "arch": "32",
             "arch_label": "32 bits (x86)",
-            "filename": "EqualizerAPO32-1.3.exe",
-            "url": "https://downloads.sourceforge.net/project/equalizerapo/1.3/EqualizerAPO32-1.3.exe",
-            "approx_size_mb": 7.6,
-            "min_expected_bytes": 6000000,
+            "filename": "EqualizerAPO-x86-1.4.2.exe",
+            "url": "https://downloads.sourceforge.net/project/equalizerapo/1.4.2/EqualizerAPO-x86-1.4.2.exe",
+            "approx_size_mb": 11.0,
+            "min_expected_bytes": 8000000,
         }
 
 
@@ -215,7 +218,7 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
         if not self._is_cancelled:
             self._is_cancelled = True
             self._lbl_status.SetLabel("Cancelando descarga...")
-            ui.message("Cancelando descarga de Equalizer APO...")
+            ui.message(_("Cancelando descarga de Equalizer APO..."))
             try:
                 if os.path.exists(self._tmp_path):
                     os.remove(self._tmp_path)
@@ -239,7 +242,7 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
             # Anunciar por voz los hitos de descarga
             if percent in (25, 50, 75, 100) and percent != self._last_spoken_percent:
                 self._last_spoken_percent = percent
-                ui.message(f"Descargando Equalizer APO: {percent}%")
+                ui.message(_("Descargando Equalizer APO: {percent}%").format(percent=percent))
         else:
             mb_down = downloaded_bytes / (1024 * 1024)
             self._gauge.Pulse()
@@ -252,6 +255,7 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
         req = urllib.request.Request(url, headers=headers)
 
         try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
                 try:
                     total_bytes = int(resp.headers.get("Content-Length", 0) or 0)
                 except (ValueError, TypeError):
@@ -288,13 +292,15 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
 
         except Exception as e:
             log.error(f"AudioEqualizer: Error durante la descarga: {e}", exc_info=True)
-            try:
-                if os.path.exists(self._tmp_path):
-                    os.remove(self._tmp_path)
-            except Exception:
-                pass
             if not self._is_cancelled:
                 wx.CallAfter(self._close_with_result, False, str(e))
+        finally:
+            if self._is_cancelled or not os.path.exists(self._target_path):
+                try:
+                    if os.path.exists(self._tmp_path):
+                        os.remove(self._tmp_path)
+                except Exception:
+                    pass
 
     def _close_with_result(self, success: bool, error_msg: str):
         """Destruye la ventana modal y llama al callback on_finished con el resultado de la descarga."""
@@ -324,9 +330,7 @@ def start_apo_download_flow(parent=None):
     # 1. Comprobar si ya existe en Descargas con tamaño válido
     if os.path.exists(target_path) and os.path.getsize(target_path) >= info["min_expected_bytes"]:
         res = wx.MessageBox(
-            f"El instalador oficial de Equalizer APO ({info['filename']}) ya se encuentra en tu carpeta Descargas:\n\n"
-            f"{target_path}\n\n"
-            "¿Deseas abrirlo ahora para realizar la instalación manual?",
+            _("El instalador oficial de Equalizer APO ({info_filename}) ya se encuentra en tu carpeta Descargas:\n\n{target_path}\n\n¿Deseas abrirlo ahora para realizar la instalación manual?").format(info_filename=info["filename"], target_path=target_path),
             "Instalador encontrado",
             wx.YES_NO | wx.ICON_QUESTION,
             parent=parent_win
@@ -334,20 +338,20 @@ def start_apo_download_flow(parent=None):
         if res == wx.YES:
             try:
                 os.startfile(target_path)
-                ui.message("Abriendo instalador de Equalizer APO. Sigue las instrucciones del asistente en pantalla.")
+                ui.message(_("Abriendo instalador de Equalizer APO. Sigue las instrucciones del asistente en pantalla."))
             except Exception as e:
-                wx.MessageBox(f"No se pudo abrir el instalador: {e}", "Error", wx.OK | wx.ICON_ERROR, parent=parent_win)
+                wx.MessageBox(_("No se pudo abrir el instalador: {e}").format(e=e), _("Error"), wx.OK | wx.ICON_ERROR, parent=parent_win)
             return
         
         # Preguntar si prefiere volver a descargarlo
         res_re = wx.MessageBox(
-            "¿Deseas volver a descargar una copia nueva del instalador?",
-            "Descargar de nuevo",
+            _("¿Deseas volver a descargar una copia nueva del instalador?"),
+            _("Descargar de nuevo"),
             wx.YES_NO | wx.ICON_QUESTION,
             parent=parent_win
         )
         if res_re != wx.YES:
-            ui.message("Operación cancelada. El instalador sigue disponible en tu carpeta Descargas.")
+            ui.message(_("Operación cancelada. El instalador sigue disponible en tu carpeta Descargas."))
             return
 
     # 2. Preguntar antes si desea descargarlo o más tarde
@@ -360,13 +364,13 @@ def start_apo_download_flow(parent=None):
     )
     res = wx.MessageBox(
         prompt_msg,
-        "Motor de audio requerido (Equalizer APO)",
+        _("Motor de audio requerido (Equalizer APO)"),
         wx.YES_NO | wx.ICON_QUESTION,
         parent=parent_win
     )
     
     if res != wx.YES:
-        ui.message("Descarga pospuesta. Puedes iniciarla cuando desees desde el menú de NVDA > Herramientas > Ecualizador de Audio.")
+        ui.message(_("Descarga pospuesta. Puedes iniciarla cuando desees desde el menú de NVDA > Herramientas > Ecualizador de Audio."))
         return
 
     # 3. Callback al terminar la descarga
@@ -375,10 +379,8 @@ def start_apo_download_flow(parent=None):
         if not success:
             if error_msg and "cancelada" not in error_msg.lower():
                 wx.MessageBox(
-                    f"Ocurrió un error al intentar descargar Equalizer APO:\n\n{error_msg}\n\n"
-                    "Por favor, verifica tu conexión a internet o descarga el instalador manualmente desde:\n"
-                    "https://sourceforge.net/projects/equalizerapo/",
-                    "Error de descarga",
+                    _("Ocurrió un error al intentar descargar Equalizer APO:\n\n{error_msg}\n\nPor favor, verifica tu conexión a internet o descarga el instalador manualmente desde:\nhttps://sourceforge.net/projects/equalizerapo/").format(error_msg=error_msg),
+                    _("Error de descarga"),
                     wx.OK | wx.ICON_ERROR,
                     parent=parent_win
                 )
@@ -386,10 +388,8 @@ def start_apo_download_flow(parent=None):
         
         # 4. Preguntar si desea abrirlo cuando termine la descarga para instalarlo
         open_res = wx.MessageBox(
-            f"Equalizer APO se ha descargado correctamente en tu carpeta Descargas:\n\n"
-            f"{final_path}\n\n"
-            "¿Deseas abrir el instalador ahora para realizar la instalación manual?",
-            "Descarga completada",
+            _("Equalizer APO se ha descargado correctamente en tu carpeta Descargas:\n\n{final_path}\n\n¿Deseas abrir el instalador ahora para realizar la instalación manual?").format(final_path=final_path),
+            _("Descarga completada"),
             wx.YES_NO | wx.ICON_QUESTION,
             parent=parent_win
         )
@@ -397,17 +397,16 @@ def start_apo_download_flow(parent=None):
         if open_res == wx.YES:
             try:
                 os.startfile(final_path)
-                ui.message("Abriendo el instalador de Equalizer APO. Sigue las instrucciones del asistente en pantalla.")
+                ui.message(_("Abriendo el instalador de Equalizer APO. Sigue las instrucciones del asistente en pantalla."))
             except Exception as e:
                 wx.MessageBox(
-                    f"No se pudo iniciar automáticamente el instalador:\n{e}\n\n"
-                    f"Puedes abrirlo manualmente desde:\n{final_path}",
-                    "Aviso",
+                    _("No se pudo iniciar automáticamente el instalador:\n{e}\n\nPuedes abrirlo manualmente desde:\n{final_path}").format(e=e, final_path=final_path),
+                    _("Aviso"),
                     wx.OK | wx.ICON_WARNING,
                     parent=parent_win
                 )
         else:
-            ui.message("El instalador de Equalizer APO está listo en tu carpeta Descargas para cuando desees instalarlo.")
+            ui.message(_("El instalador de Equalizer APO está listo en tu carpeta Descargas para cuando desees instalarlo."))
 
     # 5. Abrir la ventana de espera modal
     dlg = DownloadProgressDialog(

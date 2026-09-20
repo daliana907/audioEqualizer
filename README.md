@@ -1,60 +1,39 @@
-# Audio Equalizer para NVDA
+# Audio Equalizer
 
-[![Pruebas](https://github.com/daliana907/audioEqualizer/actions/workflows/pruebas.yml/badge.svg)](https://github.com/daliana907/audioEqualizer/actions/workflows/pruebas.yml)
+* Autor: Daliana
+* Compatibilidad con NVDA: 2023.1 en adelante
+* Descarga de la versión estable: https://github.com/daliana907/audioEqualizer
 
-- Autora: Daliana
-- Versión: 1.3.0
-- Compatibilidad: NVDA 2023.1 en adelante
-- Licencia: GNU GPL v2
+Este complemento es un ecualizador paramétrico completo de 31 bandas y procesador de efectos acústicos, diseñado específicamente para ser manejado al 100% mediante lectores de pantalla, integrándose perfectamente en NVDA.
 
-[Read in English below](#english-version)
+A diferencia de otros ecualizadores que dependen de interfaces gráficas inaccesibles o que obligan a usar el ratón para mover controles deslizantes, Audio Equalizer te permite ajustar cada frecuencia de forma milimétrica utilizando atajos de teclado y ventanas nativas.
 
-[Descargar última versión / Download latest (.nvda-addon)](https://github.com/daliana907/audioEqualizer/releases/latest/download/audioEqualizer-1.3.0.nvda-addon) · [Registro de cambios](CHANGELOG.md)
+Para funcionar, el complemento se enlaza al motor de procesamiento de audio de código abierto Equalizer APO. A través de este motor, Audio Equalizer es capaz de modificar el sonido de todo tu sistema en tiempo real.
 
----
+Sus capacidades incluyen:
 
-## Versión en Español
+*   Ecualización de 31 bandas: Permite realzar o atenuar frecuencias específicas que van desde los bajos más profundos (20 Hz) hasta los agudos más cristalinos (20 kHz), pudiendo guardar tus ajustes como perfiles personalizados.
+*   Control de ganancia y preamplificación: Regula el volumen maestro y previene la saturación o recorte del audio.
+*   Gestión Estéreo y Paneo: Ajustes para centrar el sonido, ensanchar la imagen estéreo o cambiar el balance entre el auricular izquierdo y derecho, ideal para personas con asimetría auditiva.
+*   Filtros de Accesibilidad y Fatiga: Funciones especiales como compresión de sonidos estridentes (Anti-Sibilancia), mitigación de ruidos eléctricos graves (Ground Hum) y reducción de frecuencias que causan cansancio tras muchas horas de escucha (Anti-Fatiga).
+*   Voz de NVDA: Cuenta con un filtro exclusivo que aísla y potencia las frecuencias centrales donde habita la voz de NVDA, permitiendo que el lector resalte por encima de la música o de juegos muy ruidosos sin tener que bajar su volumen de forma general.
 
-Audio Equalizer es un complemento para NVDA que proporciona un ecualizador gráfico de 31 bandas para calibrar el sonido de Windows con total accesibilidad mediante el lector de pantalla.
+## Cómo usarlo
 
-### Características principales
-- Calibración de 31 bandas de frecuencia ISO desde 20 Hz hasta 20 kHz.
-- Perfiles de sonido preparados y posibilidad de guardar tus propios ajustes.
-- Ajuste rápido de graves y agudos al vuelo.
-- Preamplificación con protección automática contra distorsión y saturación digital.
-- Balance estéreo y ajuste de ancho estéreo Mid/Side.
-- Opciones de mezcla: forzar audio mono e invertir canales izquierdo y derecho.
-- Filtros para auriculares: claridad de voz de NVDA, presencia vocal, compensación Loudness a bajo volumen, filtros contra fatiga auditiva, sibilancia, resonancias y ruidos de red eléctrica.
-- Prueba sonora de canales estéreo (izquierdo, derecho y centro).
-- Todos los atajos se pueden reasignar en las preferencias de gestos de NVDA bajo la categoría "Ecualizador de audio".
+El panel de control principal se abre mediante atajos de teclado o desde el menú de herramientas de NVDA. Dentro de este panel, podrás saltar entre pestañas para ajustar las bandas de frecuencia, activar los efectos especiales o probar el sonido de cada auricular por separado.
 
-### Requisitos
-Requiere tener instalado Equalizer APO en Windows. Si no lo tienes, el complemento te ofrece descargarlo en tu carpeta de descargas al iniciarlo por primera vez, o puedes descargarlo desde el menú Herramientas > Ecualizador de Audio.
+Además, cuenta con una lista de perfiles acústicos de fábrica y te permite guardar, nombrar y borrar los tuyos propios de forma ilimitada.
 
-### Atajos de teclado y personalización
-Para evitar conflictos con los comandos nativos de NVDA o con otros complementos (como Monitoreo del Sistema), este complemento no asigna atajos de teclado por defecto.
-Puedes acceder a todas las funciones desde el menú NVDA > Herramientas > Ecualizador de Audio, o asignar tus atajos favoritos en el menú de NVDA > Preferencias > Gestos de entrada, en la categoría "Ecualizador de audio".
+## Requisito Obligatorio
 
----
+Para que el complemento surta efecto, es indispensable tener instalado en tu computadora el programa gratuito Equalizer APO. Una vez instalado, debes abrir su herramienta "Configurator" y marcar allí la tarjeta de sonido, los altavoces o auriculares que quieras ecualizar. Luego, reinicias tu equipo y el complemento se encargará de darle las instrucciones de sonido a ese programa por detrás.
 
-## English Version
+## Créditos
 
-Audio Equalizer is an accessible 31-band graphic equalizer add-on for NVDA on Windows.
+Desarrollado y mantenido por Daliana, operando sobre la tecnología de procesamiento acústico de código abierto Equalizer APO (https://sourceforge.net/projects/equalizerapo).
 
-### Main Features
-- 31 standard ISO frequency bands from 20 Hz to 20 kHz.
-- Factory presets and custom user profiles.
-- Quick bass and treble adjustments on the fly.
-- Preamp gain control with automatic clipping protection.
-- Stereo balance and Mid/Side stereo width adjustment.
-- Mono mix and left/right channel swap.
-- Headphone acoustic filters: NVDA voice clarity, vocal presence, low-volume loudness, anti-fatigue, anti-sibilance, and ground hum suppression.
-- Stereo channel orientation test.
-- Every shortcut can be remapped from NVDA Preferences > Input Gestures under "Ecualizador de audio".
+## Licencia y derechos de autor
 
-### Requirements
-Requires Equalizer APO on Windows. The add-on can download it automatically if not detected.
+Este complemento está protegido por derechos de autor y se distribuye bajo los términos de la Licencia Pública General de GNU (GPL), versión 2 o posterior. Eres libre de usar, modificar y distribuir este software bajo dichas condiciones. Puedes consultar el texto completo de la licencia en: https://www.gnu.org/licenses/gpl-2.0.html
 
-### Keyboard Shortcuts and Customization
-To prevent conflicts with native NVDA commands or other add-ons (such as System Monitor), this add-on does not assign default keyboard shortcuts.
-All functions are available from NVDA Menu > Tools > Audio Equalizer, or can be assigned custom shortcuts under NVDA Menu > Preferences > Input Gestures, category "Ecualizador de audio".
+Aclaración sobre el uso de Inteligencia Artificial: Para programar partes de la lógica interna de este complemento y para redactar estos manuales me apoyé en herramientas de Inteligencia Artificial, tal como sugieren declarar las reglas de publicación de NVDA. De todos modos, cada línea de código y cada función fueron dirigidas, revisadas y probadas a fondo por mí.

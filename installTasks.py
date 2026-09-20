@@ -45,3 +45,28 @@ def onUninstall():
 				except OSError: pass
 	except Exception:
 		pass
+	try:
+		apo_dirs = [
+			os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), "EqualizerAPO"),
+			os.path.join(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"), "EqualizerAPO"),
+			r"C:\Program Files\EqualizerAPO"
+		]
+		for apo_dir in apo_dirs:
+			config_dir = os.path.join(apo_dir, "config")
+			main_config = os.path.join(config_dir, "config.txt")
+			addon_config = os.path.join(config_dir, "nvda_equalizer.txt")
+			if os.path.exists(addon_config):
+				try: os.remove(addon_config)
+				except OSError: pass
+			if os.path.exists(main_config):
+				try:
+					with open(main_config, "r", encoding="utf-8-sig") as f:
+						lines = f.readlines()
+					new_lines = [l for l in lines if "nvda_equalizer.txt" not in l]
+					if len(new_lines) != len(lines):
+						with open(main_config, "w", encoding="utf-8") as f:
+							f.writelines(new_lines)
+				except Exception:
+					pass
+	except Exception:
+		pass

@@ -319,7 +319,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self._controller.toggle_clarity()
 
     @script(
-        description=_("Activa o desactiva el filtro anti-sibilancia para suavizar el seseo."),
+        description=_("Activa o desactiva el filtro anti-sibilancia: un recorte fijo y constante en 7.5 kHz para suavizar el seseo."),
         category=scriptCategory,
     )
     def script_toggleAntiSibilance(self, gesture):
@@ -327,7 +327,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self._controller.toggle_anti_sibilance()
 
     @script(
-        description=_("Activa o desactiva el filtro contra la fatiga auditiva."),
+        description=_("Activa o desactiva el filtro contra la fatiga auditiva: un recorte fijo y constante en 14 kHz."),
         category=scriptCategory,
     )
     def script_toggleAntiFatigue(self, gesture):

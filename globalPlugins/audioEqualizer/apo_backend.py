@@ -107,9 +107,16 @@ class ApoBackend(AudioBackend):
 
     def set_enabled(self, enabled: bool) -> None:
         """Activa o desactiva la ecualización y actualiza el archivo en el disco."""
+        if self._enabled == enabled:
+            return
+        old_val = self._enabled
         self._enabled = enabled
         log.debug(f"AudioEqualizer: APO backend estado cambiado a {enabled}.")
-        self._flush_to_disk()
+        try:
+            self._flush_to_disk()
+        except Exception:
+            self._enabled = old_val
+            raise
 
     def get_gains(self) -> List[float]:
         """Devuelve una copia de las ganancias actuales de las 31 bandas."""
@@ -119,11 +126,18 @@ class ApoBackend(AudioBackend):
         """Establece las ganancias de las 31 bandas y el valor de preamplificación."""
         if len(gains) != constants.NUM_BANDS:
             raise ValueError(f"El backend esperaba {constants.NUM_BANDS} bandas, recibidas {len(gains)}.")
+        old_gains = self._gains
+        old_preamp = self._preamp
         self._gains = list(gains)
         self._preamp = preamp
         if self._enabled:
-            log.debug("AudioEqualizer: Actualizando ganancias en el disco (APO).")
-            self._flush_to_disk()
+            try:
+                log.debug("AudioEqualizer: Actualizando ganancias en el disco (APO).")
+                self._flush_to_disk()
+            except Exception:
+                self._gains = old_gains
+                self._preamp = old_preamp
+                raise
 
     def update(
         self,
@@ -191,35 +205,48 @@ class ApoBackend(AudioBackend):
                 pass
             raise RuntimeError(err_msg)
 
-        desired_content = (
-            "# Archivo principal de configuracion de Equalizer APO\n"
-            f"{self._include_directive}\n"
-        )
         try:
             with open(self._main_config, "r", encoding="utf-8-sig") as f:
                 content = f.read()
 
-            if content.strip() == desired_content.strip():
-                log.debug("AudioEqualizer: Directiva include ya presente y correcta en config.txt.")
+            # Buscamos la directiva línea por línea (ignorando espacios de sobra), en vez de
+            # exigir que todo el archivo sea idéntico a lo que este complemento esperaría escribir.
+            existing_lines = [line.strip() for line in content.splitlines()]
+            if self._include_directive.strip() in existing_lines:
+                log.debug("AudioEqualizer: Directiva include ya presente en config.txt.")
                 return
 
-            log.info("AudioEqualizer: Insertando directiva include en config.txt.")
+            log.info("AudioEqualizer: Agregando directiva include en config.txt sin tocar el resto del archivo.")
+            separator = "" if (not content or content.endswith("\n")) else "\n"
+            new_content = (
+                content
+                + separator
+                + "# Directiva agregada por el complemento Audio Equalizer para NVDA\n"
+                + f"{self._include_directive}\n"
+            )
             temp_path = self._main_config + ".tmp"
-            with open(temp_path, "w", encoding="utf-8") as f:
-                f.write(desired_content)
+            try:
+                with open(temp_path, "w", encoding="utf-8") as f:
+                    f.write(new_content)
                 
-            last_err = None
-            for attempt in range(10):
-                try:
-                    os.replace(temp_path, self._main_config)
-                    log.debug(f"AudioEqualizer: config.txt actualizado en intento {attempt + 1}.")
-                    break
-                except PermissionError as pe:
-                    last_err = pe
-                    log.debug(f"AudioEqualizer: config.txt bloqueado en intento {attempt + 1}/10, reintentando...")
-                    time.sleep(0.05)
-            else:
-                raise IOError(f"Archivo config.txt bloqueado tras 10 intentos: {last_err}")
+                last_err = None
+                for attempt in range(10):
+                    try:
+                        os.replace(temp_path, self._main_config)
+                        log.debug(f"AudioEqualizer: config.txt actualizado en intento {attempt + 1}.")
+                        break
+                    except (PermissionError, OSError) as pe:
+                        last_err = pe
+                        log.debug(f"AudioEqualizer: config.txt bloqueado en intento {attempt + 1}/10, reintentando...")
+                        time.sleep(0.05)
+                else:
+                    raise IOError(f"Archivo config.txt bloqueado tras 10 intentos: {last_err}")
+            finally:
+                if os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except Exception:
+                        pass
                 
         except Exception as e:
             log.error(f"AudioEqualizer: Fallo al asegurar config.txt en APO: {e}", exc_info=True)
@@ -236,7 +263,12 @@ class ApoBackend(AudioBackend):
             "# Archivo de configuracion del complemento Audio Equalizer para NVDA",
             "# Generado automaticamente con comandos nativos de Equalizer APO.",
             "# No modificar manualmente.",
-            ""
+            "",
+            # Reinicia el alcance de canales a "todos" antes de cualquier otra instrucción.
+            # Sin esto, si config.txt (que ya no se sobrescribe) dejara activo un alcance de
+            # un solo canal justo antes de la línea Include que carga este archivo, todos los
+            # filtros de abajo se aplicarían solo a ese canal en lugar de a los dos oídos.
+            "Channel: all",
         ]
 
         if not self._enabled:
@@ -294,9 +326,11 @@ class ApoBackend(AudioBackend):
                 lines.append("# Filtro anti-fatiga auditiva (Sonido calido roll-off en 14 kHz)")
                 lines.append("Filter: ON HS Fc 14000 Hz Gain -4.5 dB Q 0.7")
             if self._ground_hum:
-                lines.append("# Filtro anti-zumbido electrico (Notch 50 y 60 Hz)")
+                lines.append("# Filtro anti-zumbido electrico (Notch en 50/60 Hz y sus ecos en 100/120 Hz)")
                 lines.append("Filter: ON NO Fc 50 Hz Q 6")
                 lines.append("Filter: ON NO Fc 60 Hz Q 6")
+                lines.append("Filter: ON NO Fc 100 Hz Q 8")
+                lines.append("Filter: ON NO Fc 120 Hz Q 8")
             if self._loudness:
                 lines.append("# Compensacion isofonica Loudness (Fletcher-Munson para bajo volumen)")
                 lines.append("Filter: ON LS Fc 80 Hz Gain 4.5 dB Q 0.7")

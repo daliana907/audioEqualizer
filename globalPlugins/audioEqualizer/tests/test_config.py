@@ -28,6 +28,8 @@ sys.modules['scriptHandler'] = mock_sh
 mock_ah = types.ModuleType('addonHandler')
 mock_ah.initTranslation = lambda *a, **k: None
 sys.modules['addonHandler'] = mock_ah
+import builtins
+builtins._ = lambda x: x
 
 mock_wx = types.ModuleType('wx')
 mock_wx.Dialog = object
