@@ -450,3 +450,95 @@ def delete_user_profile(name: str) -> bool:
             pass
         return False
 
+
+
+def get_factory_override_file() -> str:
+    try:
+        import globalVars
+        import os
+        if getattr(globalVars, "appArgs", None) and getattr(globalVars.appArgs, "configPath", None):
+            return os.path.join(globalVars.appArgs.configPath, "audioEqualizer_factory_overrides.json")
+    except Exception:
+        pass
+    return os.path.join(os.path.dirname(__file__), "audioEqualizer_factory_overrides.json")
+
+def save_factory_override(index: int, profile_obj) -> None:
+    path = get_factory_override_file()
+    try:
+        import json
+        import os
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        else:
+            data = {}
+        
+        data[str(index)] = {
+            "gains": list(profile_obj.gains),
+            "tone_bass": float(profile_obj.tone_bass),
+            "tone_treble": float(profile_obj.tone_treble),
+            "sub_bass": bool(profile_obj.sub_bass),
+            "clarity": bool(profile_obj.clarity),
+            "anti_sibilance": bool(profile_obj.anti_sibilance),
+            "anti_fatigue": bool(profile_obj.anti_fatigue),
+            "ground_hum": bool(profile_obj.ground_hum),
+            "subsonic": bool(profile_obj.subsonic),
+            "nvda_voice": bool(profile_obj.nvda_voice),
+            "loudness": bool(profile_obj.loudness),
+            "stereo_width": int(profile_obj.stereo_width),
+        }
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+            
+        # Update in memory immediately
+        from . import profiles
+        if 0 <= index < len(profiles.PREDEFINED_PROFILES):
+            for k, v in data[str(index)].items():
+                profiles.PREDEFINED_PROFILES[index][k] = v
+    except Exception as e:
+        from . import logger
+        logger.log_error(f"Error saving factory override: {e}", exc=e)
+
+def remove_factory_override(index: int) -> None:
+    path = get_factory_override_file()
+    try:
+        import json
+        import os
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if str(index) in data:
+                del data[str(index)]
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=4)
+        
+        # Restore in memory
+        from . import profiles
+        import copy
+        if hasattr(profiles, "ORIGINAL_PREDEFINED_PROFILES") and 0 <= index < len(profiles.ORIGINAL_PREDEFINED_PROFILES):
+            profiles.PREDEFINED_PROFILES[index] = copy.deepcopy(profiles.ORIGINAL_PREDEFINED_PROFILES[index])
+    except Exception as e:
+        from . import logger
+        logger.log_error(f"Error removing factory override: {e}", exc=e)
+
+def apply_factory_overrides_to_profiles():
+    path = get_factory_override_file()
+    try:
+        import json
+        import os
+        from . import profiles
+        import copy
+        if not hasattr(profiles, "ORIGINAL_PREDEFINED_PROFILES"):
+            profiles.ORIGINAL_PREDEFINED_PROFILES = copy.deepcopy(profiles.PREDEFINED_PROFILES)
+            
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            for k, v in data.items():
+                idx = int(k)
+                if 0 <= idx < len(profiles.PREDEFINED_PROFILES):
+                    for key, val in v.items():
+                        profiles.PREDEFINED_PROFILES[idx][key] = val
+    except Exception as e:
+        from . import logger
+        logger.log_error(f"Error applying factory overrides: {e}", exc=e)

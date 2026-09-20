@@ -365,12 +365,7 @@ class EqualizerDialog(wx.Dialog):
         self._width_slider.SetName(f"Ancho estéreo, {txt}")
 
     def _mark_custom_profile(self):
-        """Si se modifica un parámetro acústico del perfil y no estamos en Personalizado, pasa la selección a Personalizado."""
-        if hasattr(self, "_profile_choice") and self._profile_choice:
-            sel = self._profile_choice.GetSelection()
-            if sel < profiles.CUSTOM_INDEX:
-                self._profile_choice.SetSelection(profiles.CUSTOM_INDEX)
-                self._update_profile_buttons_state()
+        pass
 
     def _on_enhancement_check(self, event):
         """Maneja la conmutación de cualquier mejora acústica del perfil."""
@@ -559,7 +554,27 @@ class EqualizerDialog(wx.Dialog):
         self._ground_hum_cb.SetValue(bool(prof.get("ground_hum", False)))
         self._update_profile_buttons_state()
 
+    
+    def _on_profile_choice_keyup(self, event):
+        idx = self._profile_choice.GetSelection()
+        if hasattr(self, "_last_profile_idx") and self._last_profile_idx != idx:
+            self._last_profile_idx = idx
+            self._apply_profile_to_ui(idx)
+            self._on_apply(None)
+            self._update_profile_buttons_state()
+            all_choices = self._profile_choice.GetStrings()
+            if 0 <= idx < len(all_choices):
+                from logHandler import log
+                try:
+                    import ui
+                    ui.message(_("Perfil: {choice}").format(choice=all_choices[idx]))
+                except Exception:
+                    pass
+        event.Skip()
+
     def _on_profile_choice(self, event):
+        self._last_profile_idx = self._profile_choice.GetSelection()
+
         """Aplica el perfil elegido en la lista desplegable, anuncia el nombre del perfil y actualiza los botones."""
         idx = self._profile_choice.GetSelection()
         self._apply_profile_to_ui(idx)
@@ -618,19 +633,14 @@ class EqualizerDialog(wx.Dialog):
         
         prof_idx = self._profile_choice.GetSelection()
         self._profile.profile_index = prof_idx
+        # LECTURA DIRECTA DE LA INTERFAZ SIEMPRE (para guardar modificaciones en perfiles de fábrica)
+        self._profile.gains = [float(s.GetValue()) for s in self._band_sliders]
+        
+        # SI ESTAMOS EN UN PERFIL DE FÁBRICA, GUARDAR EL OVERRIDE EN DISCO Y MEMORIA
+        from . import profiles
         if prof_idx < profiles.CUSTOM_INDEX:
-            prof = profiles.PREDEFINED_PROFILES[prof_idx]
-            self._profile.gains = list(prof["gains"])
-        elif prof_idx > profiles.CUSTOM_INDEX:
-            user_profs = config.load_user_profiles()
-            user_idx = prof_idx - profiles.CUSTOM_INDEX - 1
-            if 0 <= user_idx < len(user_profs):
-                self._profile.gains = list(user_profs[user_idx]["gains"])
-            else:
-                self._profile.gains = [float(s.GetValue()) for s in self._band_sliders]
-        else:
-            gains = [float(s.GetValue()) for s in self._band_sliders]
-            self._profile.gains = gains
+            from . import config
+            config.save_factory_override(prof_idx, self._profile)
 
     def _on_apply(self, event=None):
         """Aplica los cambios en tiempo real en Equalizer APO sin cerrar la ventana.
@@ -716,6 +726,8 @@ class EqualizerDialog(wx.Dialog):
             self._nvda_voice_cb.SetValue(False)
 
             if prof_idx < profiles.CUSTOM_INDEX:
+                from . import config
+                config.remove_factory_override(prof_idx)
                 prof = profiles.PREDEFINED_PROFILES[prof_idx]
                 self._apply_profile_to_ui(prof_idx)
                 self._on_apply(event)
