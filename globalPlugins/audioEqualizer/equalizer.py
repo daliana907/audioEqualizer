@@ -129,6 +129,8 @@ class EqualizerController:
                 ground_hum=profile.ground_hum,
                 subsonic=profile.subsonic,
                 nvda_voice=profile.nvda_voice,
+                surround_3d=getattr(profile, "surround_3d", False),
+                radar_mode=getattr(profile, "radar_mode", False),
                 stereo_width=profile.stereo_width,
             )
             return True

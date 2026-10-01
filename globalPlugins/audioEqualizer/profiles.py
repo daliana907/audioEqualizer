@@ -105,7 +105,8 @@ PREDEFINED_PROFILES = [
         "subsonic": True,
         "nvda_voice": False,
         "loudness": False,
-        "stereo_width": 115,
+        "stereo_width": 100,
+        "radar_mode": True,
     },
     {
         "name": "Voz y podcasts (Máxima claridad)",
@@ -200,7 +201,8 @@ PREDEFINED_PROFILES = [
         "subsonic": True,
         "nvda_voice": False,
         "loudness": True,
-        "stereo_width": 115,
+        "stereo_width": 100,
+        "radar_mode": True,
     },
     {
         "name": "Jazz y blues (Calidez íntima)",
@@ -277,6 +279,26 @@ PREDEFINED_PROFILES = [
         "nvda_voice": False,
         "loudness": True,
         "stereo_width": 100,
+    },
+    {
+        "name": "Audio Binaural (Relajacion y Paisajes)",
+        "gains": [
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 1.0, 1.5, 1.5, 1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            -0.5, -1.0, -1.5, -1.5, -1.5, -2.0, -2.0, -2.5, -2.5, -3.0, -3.0
+        ],
+        "tone_bass": 0.0,
+        "tone_treble": -1.0,
+        "sub_bass": False,
+        "clarity": False,
+        "anti_sibilance": True,
+        "anti_fatigue": True,
+        "ground_hum": False,
+        "subsonic": True,
+        "nvda_voice": False,
+        "loudness": False,
+        "stereo_width": 100,
+        "radar_mode": False
     },
 ]
 

@@ -62,11 +62,21 @@ class ApoBackend(AudioBackend):
         self._ground_hum = constants.DEFAULT_GROUND_HUM
         self._subsonic = constants.DEFAULT_SUBSONIC
         self._nvda_voice = constants.DEFAULT_NVDA_VOICE
+        self._surround_3d = False
+        self._radar_mode = False
         self._stereo_width = constants.DEFAULT_STEREO_WIDTH
 
     def _detect_and_init_paths(self) -> None:
         """Localiza de forma exhaustiva la carpeta de configuración de Equalizer APO."""
         candidates = []
+        try:
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\EqualizerAPO") as key:
+                val, _ = winreg.QueryValueEx(key, "InstallPath")
+                if val:
+                    candidates.append(val)
+        except Exception:
+            pass
         for env_var in ("ProgramW6432", "ProgramFiles", "ProgramFiles(x86)"):
             val = os.environ.get(env_var)
             if val:
@@ -158,6 +168,8 @@ class ApoBackend(AudioBackend):
         ground_hum: bool = False,
         subsonic: bool = False,
         nvda_voice: bool = False,
+        surround_3d: bool = False,
+        radar_mode: bool = False,
         stereo_width: int = 100,
     ) -> None:
         """Actualiza en bloque todos los ajustes acústicos y los escribe de inmediato en disco."""
@@ -180,6 +192,8 @@ class ApoBackend(AudioBackend):
         self._ground_hum = bool(ground_hum)
         self._subsonic = bool(subsonic)
         self._nvda_voice = bool(nvda_voice)
+        self._surround_3d = bool(surround_3d)
+        self._radar_mode = bool(radar_mode)
         self._stereo_width = int(stereo_width)
         self._flush_to_disk()
 
@@ -284,10 +298,42 @@ class ApoBackend(AudioBackend):
             elif self._stereo_width != 100:
                 # Matriz Mid/Side acústica: w=1.0 es estéreo normal, w>1.0 ensancha el campo auditivo
                 w = self._stereo_width / 100.0
-                cL = round(0.5 * (1.0 + w), 3)
-                cR = round(0.5 * (1.0 - w), 3)
-                lines.append(f"# Ancho estereo Mid/Side ({self._stereo_width}%)")
+                # Si ensancha mucho, compensamos subiendo levemente el canal central (mid_boost)
+                mid_boost = 1.0 + max(0.0, (w - 1.0) * 0.3)
+                cL = round(0.5 * (mid_boost + w), 3)
+                cR = round(0.5 * (mid_boost - w), 3)
+                lines.append(f"# Ancho estereo compensado ({self._stereo_width}%, mid_boost={round(mid_boost,2)})")
                 lines.append(f"Copy: L={cL}*L+{cR}*R R={cR}*L+{cL}*R")
+
+            # 1.4. Modo Radar (Precisión Posicional / HRTF simulado)
+            if getattr(self, "_radar_mode", False):
+                lines.append("# Modo Radar Posicional (Crossfeed HRTF natural)")
+                lines.append("Copy: 3=L 4=R")
+                lines.append("Channel: 3 4")
+                # Retraso natural de cabeza humana (~0.3 ms)
+                lines.append("Delay: 0.35 ms")
+                # Atenuar frecuencias altas cruzadas (la cabeza hace sombra acústica)
+                lines.append("Filter: ON LP Fc 1500 Hz")
+                lines.append("Preamp: -5 dB") # Margen extra para que el boost de +6dB no sature
+                lines.append("Channel: L R")
+                # Cruzar la señal con la principal
+                lines.append("Copy: L=L+0.5*4 R=R+0.5*3")
+                
+                # Compresión/EQ ascendente de detalles (Realzar zona de ubicación 2-6 kHz, achicar barro)
+                lines.append("Filter: ON PK Fc 250 Hz Gain -2.0 dB Q 1.0")
+                lines.append("Filter: ON PK Fc 4000 Hz Gain 6.0 dB Q 1.0")
+                lines.append("Filter: ON HS Fc 8000 Hz Gain 3.0 dB")
+
+            # 1.5. Efecto 3D Espacial (Haas Crossfeed)
+            if getattr(self, "_surround_3d", False):
+                lines.append("# Sonido 3D Espacial (Haas)")
+                lines.append("Copy: 3=L 4=R")
+                lines.append("Channel: 3 4")
+                lines.append("Delay: 15 ms")
+                lines.append("Preamp: -6 dB")
+                lines.append("Filter: ON LP Fc 4000 Hz")
+                lines.append("Channel: L R")
+                lines.append("Copy: L=L+0.5*4 R=R+0.5*3")
 
             # 2. Balance Estéreo (-100 a +100): exclusivamente por atenuación suave del canal opuesto
             if self._balance < 0:
@@ -406,6 +452,8 @@ class ApoBackend(AudioBackend):
                     ground_hum=self._ground_hum,
                     subsonic=self._subsonic,
                     nvda_voice=self._nvda_voice,
+                    surround_3d=self._surround_3d,
+                    radar_mode=self._radar_mode,
                     stereo_width=self._stereo_width,
                     gains=self._gains,
                     lines_written=lines,

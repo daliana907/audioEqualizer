@@ -155,6 +155,13 @@ class EqualizerDialog(wx.Dialog):
         self._mono_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
         opt_sizer.Add(self._mono_cb, 0, wx.ALL, 4)
 
+        
+
+        self._radar_mode_cb = wx.CheckBox(scroll_panel, label="Modo &Radar (Precisión posicional 360 para detalles)")
+        self._radar_mode_cb.SetValue(getattr(self._profile, "radar_mode", False))
+        self._radar_mode_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
+        opt_sizer.Add(self._radar_mode_cb, 0, wx.ALL, 4)
+
         self._swap_cb = wx.CheckBox(scroll_panel, label="&Invertir canales estéreo (L/R)")
         self._swap_cb.SetValue(self._profile.swap_channels)
         self._swap_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
@@ -552,6 +559,10 @@ class EqualizerDialog(wx.Dialog):
         # Procesamiento espacial y acústico
         self._loudness_cb.SetValue(bool(prof.get("loudness", False)))
         self._ground_hum_cb.SetValue(bool(prof.get("ground_hum", False)))
+        self._mono_cb.SetValue(bool(prof.get("mono", False)))
+        self._swap_cb.SetValue(bool(prof.get("swap_channels", False)))
+        if hasattr(self, "_radar_mode_cb"):
+            self._radar_mode_cb.SetValue(bool(prof.get("radar_mode", False)))
         self._update_profile_buttons_state()
 
     
@@ -619,6 +630,8 @@ class EqualizerDialog(wx.Dialog):
         self._profile.loudness = self._loudness_cb.GetValue()
         self._profile.ground_hum = self._ground_hum_cb.GetValue()
         self._profile.mono = self._mono_cb.GetValue()
+        self._profile.surround_3d = False
+        self._profile.radar_mode = getattr(self, "_radar_mode_cb").GetValue() if hasattr(self, "_radar_mode_cb") else False
         self._profile.swap_channels = self._swap_cb.GetValue()
         self._profile.balance = self._balance_slider.GetValue()
         self._profile.tone_bass = float(self._tone_bass_slider.GetValue())
@@ -709,6 +722,9 @@ class EqualizerDialog(wx.Dialog):
             prof_idx = self._profile_choice.GetSelection()
             self._loudness_cb.SetValue(False)
             self._mono_cb.SetValue(False)
+            pass
+            if hasattr(self, "_radar_mode_cb"):
+                self._radar_mode_cb.SetValue(False)
             self._swap_cb.SetValue(False)
             self._balance_slider.SetValue(0)
             self._update_balance_name()

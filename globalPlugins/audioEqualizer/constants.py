@@ -21,7 +21,7 @@ MAX_GAIN = 12.0
 
 # Límites para preamplificación (en decibelios)
 MIN_PREAMP = -20.0
-MAX_PREAMP = 0.0
+MAX_PREAMP = 20.0
 
 # Límites de balance estéreo (-100 a +100)
 MIN_BALANCE = -100

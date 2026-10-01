@@ -58,6 +58,8 @@ class AudioBackend(abc.ABC):
         ground_hum: bool = False,
         subsonic: bool = False,
         nvda_voice: bool = False,
+        surround_3d: bool = False,
+        radar_mode: bool = False,
         stereo_width: int = 100,
     ) -> None:
         """Transmite el conjunto completo de parámetros acústicos, filtros y ganancias al motor de audio."""

@@ -247,6 +247,8 @@ def init_config_spec():
         "ground_hum": "boolean(default=False)",
         "subsonic": "boolean(default=False)",
         "nvda_voice": "boolean(default=False)",
+        "surround_3d": "boolean(default=False)",
+        "radar_mode": "boolean(default=False)",
         "stereo_width": f"integer(default={constants.DEFAULT_STEREO_WIDTH}, min={constants.MIN_STEREO_WIDTH}, max={constants.MAX_STEREO_WIDTH})",
         "profile_index": "integer(default=0)",
         "gains": f"list(default=list({gains_default_str}))",
@@ -284,6 +286,8 @@ def load_profile() -> EqualizerProfile:
             ground_hum=c.get("ground_hum", False),
             subsonic=c.get("subsonic", False),
             nvda_voice=c.get("nvda_voice", False),
+            surround_3d=c.get("surround_3d", False),
+            radar_mode=c.get("radar_mode", False),
             stereo_width=int(c.get("stereo_width", constants.DEFAULT_STEREO_WIDTH)),
             profile_index=int(c.get("profile_index", 0)),
             gains=parsed_gains,
@@ -322,6 +326,8 @@ def save_profile(profile: EqualizerProfile) -> None:
         c["ground_hum"] = profile.ground_hum
         c["subsonic"] = profile.subsonic
         c["nvda_voice"] = profile.nvda_voice
+        c["surround_3d"] = profile.surround_3d
+        c["radar_mode"] = profile.radar_mode
         c["stereo_width"] = profile.stereo_width
         c["profile_index"] = profile.profile_index
         c["gains"] = profile.gains
@@ -468,8 +474,11 @@ def save_factory_override(index: int, profile_obj) -> None:
         import json
         import os
         if os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                data = {}
         else:
             data = {}
         
@@ -505,8 +514,11 @@ def remove_factory_override(index: int) -> None:
         import json
         import os
         if os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                data = {}
             if str(index) in data:
                 del data[str(index)]
                 with open(path, "w", encoding="utf-8") as f:
@@ -532,8 +544,11 @@ def apply_factory_overrides_to_profiles():
             profiles.ORIGINAL_PREDEFINED_PROFILES = copy.deepcopy(profiles.PREDEFINED_PROFILES)
             
         if os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                data = {}
             for k, v in data.items():
                 idx = int(k)
                 if 0 <= idx < len(profiles.PREDEFINED_PROFILES):

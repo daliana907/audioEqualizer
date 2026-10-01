@@ -60,6 +60,8 @@ class DummyBackend(AudioBackend):
         ground_hum: bool = False,
         subsonic: bool = False,
         nvda_voice: bool = False,
+        surround_3d: bool = False,
+        radar_mode: bool = False,
         stereo_width: int = 100,
     ) -> None:
         """Almacena el estado completo de ecualización y procesamiento en memoria."""

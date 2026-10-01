@@ -15,6 +15,8 @@ Sus capacidades incluyen:
 *   Ecualización de 31 bandas: Permite realzar o atenuar frecuencias específicas que van desde los bajos más profundos (20 Hz) hasta los agudos más cristalinos (20 kHz), pudiendo guardar tus ajustes como perfiles personalizados.
 *   Control de ganancia y preamplificación: Regula el volumen maestro y previene la saturación o recorte del audio.
 *   Gestión Estéreo y Paneo: Ajustes para centrar el sonido, ensanchar la imagen estéreo o cambiar el balance entre el auricular izquierdo y derecho, ideal para personas con asimetría auditiva.
+*   Modo Radar Posicional (eSports): Filtro de precisión posicional 360 grados que combina un cruce de canales (crossfeed) con una ecualización extrema tipo lupa en los agudos (+6 dB en 4 kHz) para amplificar pasos y detalles del entorno en juegos competitivos.
+*   Preamplificación Manual Extrema: Ahora puedes desactivar el preamplificador automático y empujar el volumen crudo de tu sistema hasta +20 dB para contenidos que se grabaron muy bajos.
 *   Filtros de Accesibilidad y Fatiga: Funciones especiales como compresión de sonidos estridentes (Anti-Sibilancia), mitigación de ruidos eléctricos graves (Ground Hum) y reducción de frecuencias que causan cansancio tras muchas horas de escucha (Anti-Fatiga).
 *   Voz de NVDA: Cuenta con un filtro exclusivo que aísla y potencia las frecuencias centrales donde habita la voz de NVDA, permitiendo que el lector resalte por encima de la música o de juegos muy ruidosos sin tener que bajar su volumen de forma general.
 
