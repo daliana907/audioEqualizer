@@ -72,11 +72,11 @@ PREDEFINED_PROFILES = [
     {
         "name": "Películas y series (Cine y diálogo)",
         "gains": [
-            3.0, 3.5, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.5, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 1.0, 1.5,
-            1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2.0, 2.0, 2.5, 2.5, 2.5
+            5.0, 5.0, 4.5, 4.0, 3.0, 2.0, 1.0, 0.0, 0.0, -0.5,
+            -1.0, -1.0, -1.5, -1.5, -1.5, -2.0, -2.0, -2.0, -1.5, -1.0,
+            0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.0, 3.5, 3.5, 3.5
         ],
-        "tone_bass": 1.0,
+        "tone_bass": 2.0,
         "tone_treble": 1.0,
         "sub_bass": True,
         "clarity": False,
@@ -86,7 +86,7 @@ PREDEFINED_PROFILES = [
         "subsonic": True,
         "nvda_voice": False,
         "loudness": False,
-        "stereo_width": 110,
+        "stereo_width": 125,
     },
     {
         "name": "Juegos (Pasos y detalles)",
