@@ -72,15 +72,15 @@ PREDEFINED_PROFILES = [
     {
         "name": "Películas y series (Cine y diálogo)",
         "gains": [
-            4.0, 4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.5, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 1.0, 1.5, 2.2,
-            2.8, 3.2, 3.0, 2.2, 1.2, 0.5, 0.0, -0.5, -1.0, -1.5, -2.0
+            3.0, 3.5, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.5, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 1.0, 1.5,
+            1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2.0, 2.0, 2.5, 2.5, 2.5
         ],
-        "tone_bass": 2.0,
-        "tone_treble": 0.0,
+        "tone_bass": 1.0,
+        "tone_treble": 1.0,
         "sub_bass": True,
-        "clarity": True,
-        "anti_sibilance": True,
+        "clarity": False,
+        "anti_sibilance": False,
         "anti_fatigue": False,
         "ground_hum": False,
         "subsonic": True,
