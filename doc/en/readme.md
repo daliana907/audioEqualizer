@@ -72,6 +72,14 @@ Optional filters designed for headphone listening:
 
 ---
 
+## What's new in 1.5.1
+
+- Radar Mode (Positional Audio): A dedicated 360-degree crossfeed and treble magnifying EQ specifically designed to enhance footsteps and spatial awareness in competitive gaming.
+- Unlocked Preamplifier: Automatic preamp can now be disabled, allowing up to +20 dB raw gain boost for quiet sources.
+- Binaural Profile: A new 'Warm Tilt' preset optimized for relaxing sounds and ASMR.
+- Cinema EQ overhaul: The Movies preset now uses a heavy V-shape curve to expand the soundstage and reduce center-channel compression.
+- Crash-proof JSON configuration: Background configuration files now self-heal in case of corruption caused by power outages.
+
 ## What's new in 1.4.0 (18 September 2026)
 
 - Restored Equalizer APO download: resolved an internal issue in the setup helper that prevented downloading the official installer from the add-on menu.
