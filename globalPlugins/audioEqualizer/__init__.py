@@ -69,19 +69,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self._tools_menu = wx.Menu()
         
         # Translators: Elemento de menú para abrir la ventana de configuración del ecualizador.
-        settings_item = self._tools_menu.Append(wx.ID_ANY, _("Configuración..."))
+        settings_item = self._tools_menu.Append(wx.Window.NewControlId(), _("Configuración..."))
         gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._on_settings_menu, settings_item)
         
         # Translators: Elemento de menú para ver el registro técnico y auditoría de filtros.
-        log_item = self._tools_menu.Append(wx.ID_ANY, _("Ver registro de filtros (Log)..."))
+        log_item = self._tools_menu.Append(wx.Window.NewControlId(), _("Ver registro de filtros (Log)..."))
         gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._open_log, log_item)
 
         # Translators: Elemento de menú para comprobar posibles conflictos con otros complementos.
-        conflict_item = self._tools_menu.Append(wx.ID_ANY, _("Comprobar conflictos con otros complementos..."))
+        conflict_item = self._tools_menu.Append(wx.Window.NewControlId(), _("Comprobar conflictos con otros complementos..."))
         gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._check_conflicts, conflict_item)
 
         # Translators: Elemento de menú para descargar e instalar Equalizer APO.
-        install_item = self._tools_menu.Append(wx.ID_ANY, _("Descargar e instalar motor de audio (Equalizer APO)..."))
+        install_item = self._tools_menu.Append(wx.Window.NewControlId(), _("Descargar e instalar motor de audio (Equalizer APO)..."))
         gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._install_apo, install_item)
         
         self._submenu_item = gui.mainFrame.sysTrayIcon.toolsMenu.AppendSubMenu(
