@@ -56,7 +56,7 @@ hr {
 <h1>Audio Equalizer for NVDA</h1>
 <ul>
 <li>Author: Daliana</li>
-<li>Version: 1.3.0</li>
+<li>Version: 1.6.0</li>
 <li>Compatibility: NVDA 2023.1 and later</li>
 <li>License: GNU GPL v2</li>
 </ul>
@@ -113,6 +113,16 @@ hr {
 <li>Conflict detection tool in the Tools menu to identify overlapping shortcuts.</li>
 </ul>
 <hr />
+<h2>What's new in 1.6.0</h2>
+<ul>
+<li>Windows 10 & 11 Compatibility: Fixed missing 'surround_3d' and 'radar_mode' profile attributes and keyword arguments that caused TypeErrors during initialization and profile cloning.</li>
+<li>Resilient Logging: Hardened write_audit_log to accept future kwargs and accurately report Haas 3D surround and HRTF Radar mode in the audit log.</li>
+<li>GUI & Gesture Enhancements: Added 3D Surround Effect checkbox to the Equalizer settings dialog and added assignable shortcuts in Input Gestures.</li>
+<li>Secure Equalizer APO Downloader: Enforced explicit verified SSL context with Python 3.12+ compatibility to prevent download certificate validation failures on Windows 11.</li>
+<li>Factory Overrides Resilience: Fixed UnboundLocalError when accessing globalVars in secure mode or headless test environments.</li>
+<li>Clean Uninstallation: Cleaned up factory overrides JSON and temp files on uninstall.</li>
+<li>Automatic Custom Mode: Modifying acoustic/spatial controls now automatically shifts the profile selector to 'Custom' without losing modifications.</li>
+</ul>
 <h2>What's new in 1.4.0 (18 September 2026)</h2>
 <ul>
 <li>Restored Equalizer APO download: resolved an internal issue in the setup helper that prevented downloading the official installer from the add-on menu.</li>

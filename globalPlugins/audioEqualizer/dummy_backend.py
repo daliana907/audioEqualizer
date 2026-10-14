@@ -82,6 +82,8 @@ class DummyBackend(AudioBackend):
         self.ground_hum = ground_hum
         self.subsonic = subsonic
         self.nvda_voice = nvda_voice
+        self.surround_3d = surround_3d
+        self.radar_mode = radar_mode
         self.stereo_width = stereo_width
 
     def close(self) -> None:

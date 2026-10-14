@@ -69,6 +69,8 @@ class EqualizerProfile:
         ground_hum: bool = constants.DEFAULT_GROUND_HUM,
         subsonic: bool = constants.DEFAULT_SUBSONIC,
         nvda_voice: bool = constants.DEFAULT_NVDA_VOICE,
+        surround_3d: bool = constants.DEFAULT_SURROUND_3D,
+        radar_mode: bool = constants.DEFAULT_RADAR_MODE,
         stereo_width: int = constants.DEFAULT_STEREO_WIDTH,
         gains: List[float] = None,
         profile_index: int = 0,
@@ -90,6 +92,8 @@ class EqualizerProfile:
         self.ground_hum = bool(ground_hum)
         self.subsonic = bool(subsonic)
         self.nvda_voice = bool(nvda_voice)
+        self.surround_3d = bool(surround_3d)
+        self.radar_mode = bool(radar_mode)
         self.stereo_width = int(stereo_width)
         self._profile_index = int(profile_index)
         self._gains = list(constants.DEFAULT_GAINS)
@@ -185,6 +189,8 @@ class EqualizerProfile:
             ground_hum=self.ground_hum,
             subsonic=self.subsonic,
             nvda_voice=self.nvda_voice,
+            surround_3d=self.surround_3d,
+            radar_mode=self.radar_mode,
             stereo_width=self.stereo_width,
             gains=list(self._gains),
             profile_index=self._profile_index,
@@ -215,6 +221,8 @@ def get_default_profile() -> EqualizerProfile:
         ground_hum=constants.DEFAULT_GROUND_HUM,
         subsonic=constants.DEFAULT_SUBSONIC,
         nvda_voice=constants.DEFAULT_NVDA_VOICE,
+        surround_3d=constants.DEFAULT_SURROUND_3D,
+        radar_mode=constants.DEFAULT_RADAR_MODE,
         stereo_width=constants.DEFAULT_STEREO_WIDTH,
         gains=list(constants.DEFAULT_GAINS),
         profile_index=0,
@@ -393,6 +401,8 @@ def save_user_profile(name: str, profile: EqualizerProfile) -> bool:
         "subsonic": profile.subsonic,
         "nvda_voice": profile.nvda_voice,
         "loudness": profile.loudness,
+        "surround_3d": getattr(profile, "surround_3d", False),
+        "radar_mode": getattr(profile, "radar_mode", False),
         "stereo_width": profile.stereo_width,
     }
     
@@ -461,7 +471,6 @@ def delete_user_profile(name: str) -> bool:
 def get_factory_override_file() -> str:
     try:
         import globalVars
-        import os
         if getattr(globalVars, "appArgs", None) and getattr(globalVars.appArgs, "configPath", None):
             return os.path.join(globalVars.appArgs.configPath, "audioEqualizer_factory_overrides.json")
     except Exception:
@@ -471,8 +480,6 @@ def get_factory_override_file() -> str:
 def save_factory_override(index: int, profile_obj) -> None:
     path = get_factory_override_file()
     try:
-        import json
-        import os
         if os.path.exists(path):
             try:
                 with open(path, "r", encoding="utf-8") as f:
@@ -493,6 +500,8 @@ def save_factory_override(index: int, profile_obj) -> None:
             "ground_hum": bool(profile_obj.ground_hum),
             "subsonic": bool(profile_obj.subsonic),
             "nvda_voice": bool(profile_obj.nvda_voice),
+            "surround_3d": bool(getattr(profile_obj, "surround_3d", False)),
+            "radar_mode": bool(getattr(profile_obj, "radar_mode", False)),
             "loudness": bool(profile_obj.loudness),
             "stereo_width": int(profile_obj.stereo_width),
         }
@@ -511,8 +520,6 @@ def save_factory_override(index: int, profile_obj) -> None:
 def remove_factory_override(index: int) -> None:
     path = get_factory_override_file()
     try:
-        import json
-        import os
         if os.path.exists(path):
             try:
                 with open(path, "r", encoding="utf-8") as f:
@@ -536,8 +543,6 @@ def remove_factory_override(index: int) -> None:
 def apply_factory_overrides_to_profiles():
     path = get_factory_override_file()
     try:
-        import json
-        import os
         from . import profiles
         import copy
         if not hasattr(profiles, "ORIGINAL_PREDEFINED_PROFILES"):

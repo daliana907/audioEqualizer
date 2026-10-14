@@ -13,6 +13,10 @@ controlar el balance suave y el ancho estéreo Mid/Side, y escuchar los cambios 
 """
 import addonHandler
 addonHandler.initTranslation()
+try:
+    _
+except NameError:
+    def _(s): return s
 
 
 import wx
@@ -157,9 +161,14 @@ class EqualizerDialog(wx.Dialog):
 
         
 
+        self._surround_3d_cb = wx.CheckBox(scroll_panel, label="Efecto &3D Espacial (Amplitud inmersiva Haas)")
+        self._surround_3d_cb.SetValue(getattr(self._profile, "surround_3d", False))
+        self._surround_3d_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
+        opt_sizer.Add(self._surround_3d_cb, 0, wx.ALL, 4)
+
         self._radar_mode_cb = wx.CheckBox(scroll_panel, label="Modo &Radar (Precisión posicional 360 para detalles)")
         self._radar_mode_cb.SetValue(getattr(self._profile, "radar_mode", False))
-        self._radar_mode_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
+        self._radar_mode_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         opt_sizer.Add(self._radar_mode_cb, 0, wx.ALL, 4)
 
         self._swap_cb = wx.CheckBox(scroll_panel, label="&Invertir canales estéreo (L/R)")
@@ -372,7 +381,13 @@ class EqualizerDialog(wx.Dialog):
         self._width_slider.SetName(f"Ancho estéreo, {txt}")
 
     def _mark_custom_profile(self):
-        pass
+        """Conmuta la selección a 'Personalizado' si se estaba en un perfil predefinido."""
+        if hasattr(self, "_profile_choice") and self._profile_choice:
+            cur = self._profile_choice.GetSelection()
+            if cur != profiles.CUSTOM_INDEX:
+                self._profile_choice.SetSelection(profiles.CUSTOM_INDEX)
+                if hasattr(self, "_update_profile_buttons_state"):
+                    self._update_profile_buttons_state()
 
     def _on_enhancement_check(self, event):
         """Maneja la conmutación de cualquier mejora acústica del perfil."""
@@ -549,19 +564,31 @@ class EqualizerDialog(wx.Dialog):
         self._update_width_name()
 
         # Mejoras para auriculares profesionales
-        self._sub_bass_cb.SetValue(bool(prof.get("sub_bass", False)))
-        self._clarity_cb.SetValue(bool(prof.get("clarity", False)))
-        self._anti_sibilance_cb.SetValue(bool(prof.get("anti_sibilance", False)))
-        self._anti_fatigue_cb.SetValue(bool(prof.get("anti_fatigue", False)))
-        self._subsonic_cb.SetValue(bool(prof.get("subsonic", False)))
-        self._nvda_voice_cb.SetValue(bool(prof.get("nvda_voice", False)))
+        if hasattr(self, "_sub_bass_cb") and self._sub_bass_cb:
+            self._sub_bass_cb.SetValue(bool(prof.get("sub_bass", False)))
+        if hasattr(self, "_clarity_cb") and self._clarity_cb:
+            self._clarity_cb.SetValue(bool(prof.get("clarity", False)))
+        if hasattr(self, "_anti_sibilance_cb") and self._anti_sibilance_cb:
+            self._anti_sibilance_cb.SetValue(bool(prof.get("anti_sibilance", False)))
+        if hasattr(self, "_anti_fatigue_cb") and self._anti_fatigue_cb:
+            self._anti_fatigue_cb.SetValue(bool(prof.get("anti_fatigue", False)))
+        if hasattr(self, "_subsonic_cb") and self._subsonic_cb:
+            self._subsonic_cb.SetValue(bool(prof.get("subsonic", False)))
+        if hasattr(self, "_nvda_voice_cb") and self._nvda_voice_cb:
+            self._nvda_voice_cb.SetValue(bool(prof.get("nvda_voice", False)))
 
         # Procesamiento espacial y acústico
-        self._loudness_cb.SetValue(bool(prof.get("loudness", False)))
-        self._ground_hum_cb.SetValue(bool(prof.get("ground_hum", False)))
-        self._mono_cb.SetValue(bool(prof.get("mono", False)))
-        self._swap_cb.SetValue(bool(prof.get("swap_channels", False)))
-        if hasattr(self, "_radar_mode_cb"):
+        if hasattr(self, "_loudness_cb") and self._loudness_cb:
+            self._loudness_cb.SetValue(bool(prof.get("loudness", False)))
+        if hasattr(self, "_ground_hum_cb") and self._ground_hum_cb:
+            self._ground_hum_cb.SetValue(bool(prof.get("ground_hum", False)))
+        if hasattr(self, "_mono_cb") and self._mono_cb:
+            self._mono_cb.SetValue(bool(prof.get("mono", False)))
+        if hasattr(self, "_swap_cb") and self._swap_cb:
+            self._swap_cb.SetValue(bool(prof.get("swap_channels", False)))
+        if hasattr(self, "_surround_3d_cb") and self._surround_3d_cb:
+            self._surround_3d_cb.SetValue(bool(prof.get("surround_3d", False)))
+        if hasattr(self, "_radar_mode_cb") and self._radar_mode_cb:
             self._radar_mode_cb.SetValue(bool(prof.get("radar_mode", False)))
         self._update_profile_buttons_state()
 
@@ -630,7 +657,7 @@ class EqualizerDialog(wx.Dialog):
         self._profile.loudness = self._loudness_cb.GetValue()
         self._profile.ground_hum = self._ground_hum_cb.GetValue()
         self._profile.mono = self._mono_cb.GetValue()
-        self._profile.surround_3d = False
+        self._profile.surround_3d = getattr(self, "_surround_3d_cb").GetValue() if hasattr(self, "_surround_3d_cb") else False
         self._profile.radar_mode = getattr(self, "_radar_mode_cb").GetValue() if hasattr(self, "_radar_mode_cb") else False
         self._profile.swap_channels = self._swap_cb.GetValue()
         self._profile.balance = self._balance_slider.GetValue()
@@ -720,26 +747,42 @@ class EqualizerDialog(wx.Dialog):
         """
         try:
             prof_idx = self._profile_choice.GetSelection()
-            self._loudness_cb.SetValue(False)
-            self._mono_cb.SetValue(False)
-            pass
-            if hasattr(self, "_radar_mode_cb"):
+            if hasattr(self, "_loudness_cb") and self._loudness_cb:
+                self._loudness_cb.SetValue(False)
+            if hasattr(self, "_mono_cb") and self._mono_cb:
+                self._mono_cb.SetValue(False)
+            if hasattr(self, "_radar_mode_cb") and self._radar_mode_cb:
                 self._radar_mode_cb.SetValue(False)
-            self._swap_cb.SetValue(False)
-            self._balance_slider.SetValue(0)
-            self._update_balance_name()
-            self._width_slider.SetValue(100)
-            self._update_width_name()
-            self._tone_bass_slider.SetValue(0)
-            self._tone_treble_slider.SetValue(0)
-            self._update_tone_names()
-            self._sub_bass_cb.SetValue(False)
-            self._clarity_cb.SetValue(False)
-            self._anti_sibilance_cb.SetValue(False)
-            self._anti_fatigue_cb.SetValue(False)
-            self._ground_hum_cb.SetValue(False)
-            self._subsonic_cb.SetValue(False)
-            self._nvda_voice_cb.SetValue(False)
+            if hasattr(self, "_swap_cb") and self._swap_cb:
+                self._swap_cb.SetValue(False)
+            if hasattr(self, "_balance_slider") and self._balance_slider:
+                self._balance_slider.SetValue(0)
+                if hasattr(self, "_update_balance_name"):
+                    self._update_balance_name()
+            if hasattr(self, "_width_slider") and self._width_slider:
+                self._width_slider.SetValue(100)
+                if hasattr(self, "_update_width_name"):
+                    self._update_width_name()
+            if hasattr(self, "_tone_bass_slider") and self._tone_bass_slider:
+                self._tone_bass_slider.SetValue(0)
+            if hasattr(self, "_tone_treble_slider") and self._tone_treble_slider:
+                self._tone_treble_slider.SetValue(0)
+            if hasattr(self, "_update_tone_names"):
+                self._update_tone_names()
+            if hasattr(self, "_sub_bass_cb") and self._sub_bass_cb:
+                self._sub_bass_cb.SetValue(False)
+            if hasattr(self, "_clarity_cb") and self._clarity_cb:
+                self._clarity_cb.SetValue(False)
+            if hasattr(self, "_anti_sibilance_cb") and self._anti_sibilance_cb:
+                self._anti_sibilance_cb.SetValue(False)
+            if hasattr(self, "_anti_fatigue_cb") and self._anti_fatigue_cb:
+                self._anti_fatigue_cb.SetValue(False)
+            if hasattr(self, "_ground_hum_cb") and self._ground_hum_cb:
+                self._ground_hum_cb.SetValue(False)
+            if hasattr(self, "_subsonic_cb") and self._subsonic_cb:
+                self._subsonic_cb.SetValue(False)
+            if hasattr(self, "_nvda_voice_cb") and self._nvda_voice_cb:
+                self._nvda_voice_cb.SetValue(False)
 
             if prof_idx < profiles.CUSTOM_INDEX:
                 from . import config

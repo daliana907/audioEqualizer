@@ -61,6 +61,8 @@ class TestLoggerDiagnostics(unittest.TestCase):
             subsonic=True,
             nvda_voice=True,
             stereo_width=120,
+            surround_3d=True,
+            radar_mode=True,
             gains=[0.0] * 31,
             lines_written=["Preamp: -2.0 dB"],
             apo_config_path=r"C:\fake\nvda_equalizer.txt",
@@ -71,6 +73,8 @@ class TestLoggerDiagnostics(unittest.TestCase):
         self.assertIn("ESTADO DEL ECUALIZADOR: [ACTIVADO Y PROCESANDO AUDIO]", content)
         self.assertIn("Filtro subs", content)
         self.assertIn("120% (Procesamiento matricial)", content)
+        self.assertIn("Efecto 3D Espacial (Haas): [EFECTO REAL: APLICADO]", content)
+        self.assertIn("Modo Radar Posicional (HRTF crossfeed): [EFECTO REAL: APLICADO]", content)
 
 if __name__ == '__main__':
     unittest.main()

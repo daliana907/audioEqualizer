@@ -17,6 +17,10 @@ cualquier chasquido (pop) por discontinuidad de fase al arrancar o cortar la ond
 """
 import addonHandler
 addonHandler.initTranslation()
+try:
+    _
+except NameError:
+    def _(s): return s
 
 
 import os

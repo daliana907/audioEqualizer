@@ -11,7 +11,7 @@ import threading
 import unittest
 import urllib.request
 import types
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 for mod in ["wx", "gui", "globalPluginHandler", "logHandler", "globalCommands", "ui",
             "scriptHandler", "addonHandler"]:
@@ -108,7 +108,7 @@ class DescargaDelInstaladorDeEqualizerApo(unittest.TestCase):
 
         contenido_falso = b"X" * 100
         original_urlopen = urllib.request.urlopen
-        urllib.request.urlopen = lambda req, timeout=30: self._RespuestaFalsa(contenido_falso)
+        urllib.request.urlopen = lambda req, timeout=30, **kwargs: self._RespuestaFalsa(contenido_falso)
         try:
             with tempfile.TemporaryDirectory() as tmpdir:
                 destino = os.path.join(tmpdir, "instalador.exe")
@@ -385,6 +385,33 @@ class SincronizacionCompletaDePerfilesEnGui(unittest.TestCase):
         dlg._on_enhancement_check(None)
 
         dlg._profile_choice.SetSelection.assert_called_with(profiles.CUSTOM_INDEX)
+
+
+class RegresionesV160(unittest.TestCase):
+    """Regresiones y compatibilidad corregidas en la versión 1.6.0."""
+
+    def test_perfil_admite_surround_y_radar(self):
+        from audioEqualizer.config import EqualizerProfile
+        p = EqualizerProfile(surround_3d=True, radar_mode=True)
+        self.assertTrue(p.surround_3d)
+        self.assertTrue(p.radar_mode)
+
+    def test_write_audit_log_admite_kwargs_desconocidos(self):
+        from audioEqualizer.logger import write_audit_log
+        # No debe lanzar TypeError si se pasan kwargs nuevos o surround/radar
+        write_audit_log(
+            enabled=False,
+            surround_3d=True,
+            radar_mode=True,
+            unrecognized_future_arg=True
+        )
+
+    def test_get_factory_override_file_sin_globalvars(self):
+        from audioEqualizer.config import get_factory_override_file
+        with patch.dict(sys.modules, {"globalVars": None}):
+            path = get_factory_override_file()
+            self.assertTrue(os.path.isabs(path))
+            self.assertTrue(path.endswith("audioEqualizer_factory_overrides.json"))
 
 
 if __name__ == "__main__":

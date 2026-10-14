@@ -33,29 +33,36 @@ LOG_FILE_PATH = _get_log_file_path()
 
 
 def write_audit_log(
-    enabled: bool,
-    preamp: float,
-    auto_preamp: bool,
-    mono: bool,
-    swap_channels: bool,
-    balance: int,
-    tone_bass: float,
-    tone_treble: float,
-    sub_bass: bool,
-    clarity: bool,
+    enabled: bool = False,
+    preamp: float = 0.0,
+    auto_preamp: bool = False,
+    mono: bool = False,
+    swap_channels: bool = False,
+    balance: int = 0,
+    tone_bass: float = 0.0,
+    tone_treble: float = 0.0,
+    sub_bass: bool = False,
+    clarity: bool = False,
     anti_sibilance: bool = False,
     anti_fatigue: bool = False,
     ground_hum: bool = False,
     loudness: bool = False,
     subsonic: bool = False,
     nvda_voice: bool = False,
+    surround_3d: bool = False,
+    radar_mode: bool = False,
     stereo_width: int = 100,
     gains: List[float] = None,
     lines_written: List[str] = None,
     apo_config_path: str = "",
-    apo_include_ok: bool = True
+    apo_include_ok: bool = True,
+    **kwargs
 ) -> None:
     """Registra en audioEqualizer.log el volcado detallado de parámetros, ganancias y sintaxis generada para Equalizer APO."""
+    if gains is None:
+        gains = []
+    if lines_written is None:
+        lines_written = []
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     sep = "=" * 70
     subsep = "-" * 70
@@ -147,6 +154,16 @@ def write_audit_log(
             "Invertir canales estéreo (L/R)",
             swap_channels,
             "Copy: L=R R=L"
+        ))
+        report_lines.append(_check(
+            "Efecto 3D Espacial (Haas)",
+            surround_3d,
+            "Delay: 15 ms + Preamp: -6 dB + Filter: LP Fc 4000 Hz"
+        ))
+        report_lines.append(_check(
+            "Modo Radar Posicional (HRTF crossfeed)",
+            radar_mode,
+            "Delay: 0.35 ms + LP Fc 1500 Hz + EQ 4 kHz"
         ))
 
         if balance != 0:

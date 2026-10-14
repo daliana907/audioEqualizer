@@ -48,6 +48,8 @@ DEFAULT_ANTI_FATIGUE = False
 DEFAULT_GROUND_HUM = False
 DEFAULT_SUBSONIC = False
 DEFAULT_NVDA_VOICE = False
+DEFAULT_SURROUND_3D = False
+DEFAULT_RADAR_MODE = False
 
 # Ancho estéreo (0% = mono, 100% = estéreo normal, 200% = máxima expansión)
 MIN_STEREO_WIDTH = 0

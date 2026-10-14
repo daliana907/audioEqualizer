@@ -12,6 +12,10 @@ el cambio ordenado de perfiles, los controles de tono y la persistencia de ajust
 """
 import addonHandler
 addonHandler.initTranslation()
+try:
+    _
+except NameError:
+    def _(s): return s
 
 
 try:
@@ -571,6 +575,14 @@ class EqualizerController:
     def toggle_ground_hum(self) -> None:
         """Alterna los filtros notch contra bucles de masa y zumbidos eléctricos a 50/60 Hz."""
         self._toggle_feature("ground_hum", "Filtro anti-zumbido eléctrico")
+
+    def toggle_surround_3d(self) -> None:
+        """Alterna el efecto 3D espacial (Haas)."""
+        self._toggle_feature("surround_3d", "Efecto 3D espacial (Haas)")
+
+    def toggle_radar_mode(self) -> None:
+        """Alterna el modo radar posicional (HRTF crossfeed)."""
+        self._toggle_feature("radar_mode", "Modo radar posicional")
 
     def reset_to_flat(self) -> None:
         """Restablece la ecualización a una respuesta plana (0 dB)."""

@@ -359,6 +359,22 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self._controller.toggle_ground_hum()
 
     @script(
+        description=_("Activa o desactiva el efecto 3D espacial (Haas)."),
+        category=scriptCategory,
+    )
+    def script_toggleSurround3d(self, gesture):
+        """Conmuta el efecto 3D espacial y lo anuncia por voz."""
+        self._controller.toggle_surround_3d()
+
+    @script(
+        description=_("Activa o desactiva el modo radar posicional (HRTF crossfeed)."),
+        category=scriptCategory,
+    )
+    def script_toggleRadarMode(self, gesture):
+        """Conmuta el modo radar posicional y lo anuncia por voz."""
+        self._controller.toggle_radar_mode()
+
+    @script(
         description=_("Restablece la ecualización a una respuesta plana (0 dB)."),
         category=scriptCategory,
     )

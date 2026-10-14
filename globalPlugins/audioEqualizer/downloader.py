@@ -17,6 +17,7 @@ import os
 import platform
 import threading
 import urllib.request
+import ssl
 
 try:
     import wx
@@ -255,7 +256,8 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
         req = urllib.request.Request(url, headers=headers)
 
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            ctx = ssl.create_default_context()
+            with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
                 try:
                     total_bytes = int(resp.headers.get("Content-Length", 0) or 0)
                 except (ValueError, TypeError):

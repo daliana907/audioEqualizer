@@ -64,7 +64,7 @@ class TestEqualizerProfile(unittest.TestCase):
 
     def test_preamp_out_of_bounds(self):
         with self.assertRaises(ValueError):
-            self.profile.preamp = 5.0  # Máximo es 0.0
+            self.profile.preamp = 25.0  # Máximo es 20.0
         with self.assertRaises(ValueError):
             self.profile.preamp = -25.0  # Mínimo es -20.0
 
@@ -103,6 +103,18 @@ class TestEqualizerProfile(unittest.TestCase):
         # Verificar que es copia profunda
         self.assertIsNot(cloned, self.profile)
         self.assertIsNot(cloned.gains, self.profile.gains)
+
+    def test_surround_and_radar_attributes(self):
+        self.assertFalse(self.profile.surround_3d)
+        self.assertFalse(self.profile.radar_mode)
+        self.profile.surround_3d = True
+        self.profile.radar_mode = True
+        self.assertTrue(self.profile.surround_3d)
+        self.assertTrue(self.profile.radar_mode)
+        
+        cloned = self.profile.clone()
+        self.assertTrue(cloned.surround_3d)
+        self.assertTrue(cloned.radar_mode)
 
 
 from audioEqualizer.dummy_backend import DummyBackend
@@ -145,8 +157,8 @@ class TestStereoWidthApoFormatting(unittest.TestCase):
         self.assertIsNotNone(copy_line)
         # Debe contener el separador '+' antes del coeficiente negativo de R para que Equalizer APO lo parsee
         self.assertIn("*L+", copy_line)
-        self.assertIn("L=1.25*L+-0.25*R", copy_line)
-        self.assertIn("R=-0.25*L+1.25*R", copy_line)
+        self.assertIn("L=1.325*L+-0.175*R", copy_line)
+        self.assertIn("R=-0.175*L+1.325*R", copy_line)
 
     def test_stereo_width_less_than_100_has_valid_plus_separator(self):
         from audioEqualizer.apo_backend import ApoBackend

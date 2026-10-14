@@ -1,7 +1,7 @@
 # Audio Equalizer for NVDA
 
 - Author: Daliana
-- Version: 1.3.0
+- Version: 1.6.0
 - Compatibility: NVDA 2023.1 and later
 - License: GNU GPL v2
 
@@ -71,6 +71,16 @@ Optional filters designed for headphone listening:
 - Conflict detection tool in the Tools menu to identify overlapping shortcuts.
 
 ---
+
+## What's new in 1.6.0
+
+- Windows 10 & 11 Compatibility Fixes: Fixed missing 'surround_3d' and 'radar_mode' profile attributes and keyword arguments that caused TypeErrors during initialization and profile cloning.
+- Resilient Logging & Diagnostics: Hardened write_audit_log to accept dynamic/future arguments safely and report spatial improvements (Haas 3D surround and HRTF Radar mode) in the log.
+- GUI Enhancement: Added 3D Surround Effect checkbox to the Equalizer configuration dialog and added assignable shortcuts for spatial enhancements in Input Gestures.
+- Secure Equalizer APO Downloader: Enforced explicit verified SSL context with Python 3.12+ compatibility to prevent download certificate validation failures on Windows 11.
+- Factory Overrides Resilience: Fixed UnboundLocalError when accessing globalVars in secure mode or headless test environments.
+- Clean Uninstallation: Removed factory overrides JSON and temp files on uninstall.
+- Automatic Custom Mode: Modifying acoustic/spatial controls now automatically shifts the profile selector to 'Custom' without losing modifications.
 
 ## What's new in 1.5.1
 
