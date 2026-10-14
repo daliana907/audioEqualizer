@@ -52,6 +52,7 @@ class EqualizerController:
         """
         log.debug("AudioEqualizer: Inicializando controlador principal.")
         self._backend = backend
+        config.apply_factory_overrides_to_profiles()
         self._current_profile = config.load_profile()
         self._dialog_instance = None
         # Sincronizamos en silencio al arrancar para no saturar con mensajes de voz
@@ -219,6 +220,8 @@ class EqualizerController:
         target_profile.nvda_voice = bool(preset_data.get("nvda_voice", False))
         target_profile.loudness = bool(preset_data.get("loudness", False))
         target_profile.stereo_width = int(preset_data.get("stereo_width", 100))
+        target_profile.surround_3d = bool(preset_data.get("surround_3d", False))
+        target_profile.radar_mode = bool(preset_data.get("radar_mode", False))
 
     def _get_all_available_profiles(self):
         """Combina la lista de perfiles predefinidos de fábrica con los perfiles creados por el usuario.

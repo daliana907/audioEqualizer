@@ -56,7 +56,7 @@ hr {
 <h1>Audio Equalizer for NVDA</h1>
 <ul>
 <li>Author: Daliana</li>
-<li>Version: 1.6.0</li>
+<li>Version: 1.6.1</li>
 <li>Compatibility: NVDA 2023.1 and later</li>
 <li>License: GNU GPL v2</li>
 </ul>
@@ -113,6 +113,14 @@ hr {
 <li>Conflict detection tool in the Tools menu to identify overlapping shortcuts.</li>
 </ul>
 <hr />
+<h2>What's new in 1.6.1</h2>
+<ul>
+<li><strong>Indestructible Equalizer State Persistence:</strong> Fixed an issue where the equalizer could turn off or reset to flat/default on NVDA restart or PC reboot.</li>
+<li><strong>Dual-Layer Persistence Architecture:</strong> Synchronous write-through to nvda.ini via config.conf.save() coupled with an atomic JSON state backup file resistant to sudden crashes and NVDA + Control + F3 restarts.</li>
+<li><strong>Resilient Configuration Loading:</strong> Tolerant parsing of gains lists formatted as comma-separated strings by ConfigObj, preventing silent fallback to factory defaults.</li>
+<li><strong>Apply Button Persistence:</strong> Clicking "Apply" in the settings dialog now immediately flushes and persists settings to disk.</li>
+<li><strong>Startup Factory Overrides:</strong> Customized factory presets are automatically restored into memory upon NVDA launch.</li>
+</ul>
 <h2>What's new in 1.6.0</h2>
 <ul>
 <li>Windows 10 & 11 Compatibility: Fixed missing 'surround_3d' and 'radar_mode' profile attributes and keyword arguments that caused TypeErrors during initialization and profile cloning.</li>

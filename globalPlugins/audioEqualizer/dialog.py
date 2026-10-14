@@ -322,7 +322,7 @@ class EqualizerDialog(wx.Dialog):
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         apply_btn = wx.Button(btn_panel, label="A&plicar")
-        apply_btn.Bind(wx.EVT_BUTTON, self._on_apply)
+        apply_btn.Bind(wx.EVT_BUTTON, self._on_apply_button)
         btn_sizer.Add(apply_btn, 0, wx.RIGHT, 5)
 
         reset_btn = wx.Button(btn_panel, label="&Restablecer")
@@ -713,8 +713,31 @@ class EqualizerDialog(wx.Dialog):
             logger.log_error(f"Error aplicando cambios en GUI: {e}", exc=e, component="EqualizerDialog")
             ui.message(_("Error al aplicar cambios: {e}").format(e=e))
 
+    def _on_apply_button(self, event=None):
+        """Maneja el clic explícito en el botón 'Aplicar', guardando inmediatamente en disco."""
+        if getattr(self, "_cleaned_up", False):
+            return
+        if getattr(self, "_apply_timer", None) is not None:
+            try:
+                self._apply_timer.Stop()
+            except Exception:
+                pass
+        try:
+            self._sync_profile_from_ui()
+            self._controller.apply_profile(self._profile, save=True)
+            ui.message(_("Configuración aplicada y guardada."))
+        except Exception as e:
+            log.error(f"AudioEqualizer: Error en botón Aplicar: {e}", exc_info=True)
+            logger.log_error(f"Error en botón Aplicar: {e}", exc=e, component="EqualizerDialog")
+            ui.message(_("Error al aplicar cambios: {e}").format(e=e))
+
     def _on_ok(self, event=None):
         """Guarda permanentemente la configuración en NVDA y cierra la ventana."""
+        if getattr(self, "_apply_timer", None) is not None:
+            try:
+                self._apply_timer.Stop()
+            except Exception:
+                pass
         try:
             self._sync_profile_from_ui()
             self._controller.apply_profile(self._profile, save=True)

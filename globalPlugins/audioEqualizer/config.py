@@ -263,82 +263,215 @@ def init_config_spec():
     }
 
 
-def load_profile() -> EqualizerProfile:
-    """Carga los parámetros del ecualizador desde el archivo nvda.ini de NVDA.
+def _parse_bool(val, default: bool = False) -> bool:
+    """Parsea de forma segura cualquier representación de booleano (bool, int, str) sin fallar."""
+    if val is None:
+        return default
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, (int, float)):
+        return bool(val)
+    if isinstance(val, str):
+        v = val.strip().lower()
+        if v in ("true", "1", "yes", "on", "t", "si", "s"):
+            return True
+        if v in ("false", "0", "no", "off", "f"):
+            return False
+    return default
 
-    Si los datos de las ganancias no coinciden exactamente con las 31 bandas ISO,
-    o si ocurre un fallo al leer la configuración, recurre al perfil plano por defecto
-    y deja constancia en el registro de errores para que el complemento nunca bloquee el arranque.
-    """
+
+def _parse_float(val, default: float = 0.0) -> float:
+    """Convierte de forma segura a float; si está corrupto o vacío, devuelve el valor por defecto."""
     try:
-        c = config.conf["audioEqualizer"]
-        raw_gains = c.get("gains", [])
-        parsed_gains = [float(x) for x in raw_gains]
-        if len(parsed_gains) != constants.NUM_BANDS:
-            parsed_gains = list(constants.DEFAULT_GAINS)
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
+
+def _parse_int(val, default: int = 0) -> int:
+    """Convierte a entero tolerando enteros, cadenas y números con decimales como '100.0'."""
+    try:
+        return int(round(float(val)))
+    except (ValueError, TypeError):
+        return default
+
+
+def _parse_gains(val) -> List[float]:
+    """Valida y limpia la lista de ganancias de las 31 bandas ISO, acotando a límites permitidos."""
+    if val is None:
+        return list(constants.DEFAULT_GAINS)
+    if isinstance(val, str):
+        val = [x.strip() for x in val.split(",") if x.strip()]
+    if not isinstance(val, (list, tuple)):
+        return list(constants.DEFAULT_GAINS)
+    
+    clean = []
+    for item in val:
+        try:
+            f = float(item)
+            clean.append(max(constants.MIN_GAIN, min(constants.MAX_GAIN, f)))
+        except (ValueError, TypeError):
+            clean.append(0.0)
             
+    if len(clean) != constants.NUM_BANDS:
+        if len(clean) < constants.NUM_BANDS:
+            clean.extend([0.0] * (constants.NUM_BANDS - len(clean)))
+        else:
+            clean = clean[:constants.NUM_BANDS]
+    return clean
+
+
+def _get_state_file() -> str:
+    """Ruta al archivo de estado persistente e indestructible de Audio Equalizer."""
+    try:
+        import globalVars
+        if globalVars.appArgs and getattr(globalVars.appArgs, "configPath", None):
+            return os.path.join(globalVars.appArgs.configPath, "audioEqualizer_state.json")
+    except Exception:
+        pass
+    appdata = os.environ.get("APPDATA", "")
+    if appdata:
+        return os.path.join(appdata, "nvda", "audioEqualizer_state.json")
+    return os.path.join(os.path.dirname(__file__), "audioEqualizer_state.json")
+
+
+def _save_state_file(profile: EqualizerProfile) -> None:
+    """Guarda una copia atómica e independiente del estado activo en JSON para evitar pérdidas en reinicios."""
+    path = _get_state_file()
+    tmp_path = path + ".tmp"
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        data = {
+            "enabled": bool(profile.enabled),
+            "preamp": float(profile.preamp),
+            "auto_preamp": bool(profile.auto_preamp),
+            "loudness": bool(profile.loudness),
+            "mono": bool(profile.mono),
+            "swap_channels": bool(profile.swap_channels),
+            "balance": int(profile.balance),
+            "tone_bass": float(profile.tone_bass),
+            "tone_treble": float(profile.tone_treble),
+            "sub_bass": bool(profile.sub_bass),
+            "clarity": bool(profile.clarity),
+            "anti_sibilance": bool(profile.anti_sibilance),
+            "anti_fatigue": bool(profile.anti_fatigue),
+            "ground_hum": bool(profile.ground_hum),
+            "subsonic": bool(profile.subsonic),
+            "nvda_voice": bool(profile.nvda_voice),
+            "surround_3d": bool(profile.surround_3d),
+            "radar_mode": bool(profile.radar_mode),
+            "stereo_width": int(profile.stereo_width),
+            "profile_index": int(profile.profile_index),
+            "gains": [float(g) for g in profile.gains],
+        }
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+        os.replace(tmp_path, path)
+    except Exception as e:
+        log.warning(f"AudioEqualizer: Error guardando estado de respaldo JSON: {e}")
+
+
+def load_profile() -> EqualizerProfile:
+    """Carga los parámetros del ecualizador desde nvda.ini o desde el archivo de respaldo seguro.
+
+    Si nvda.ini está vacío, no se ha guardado aún, o cambia de perfil de NVDA, recurre
+    al archivo de respaldo JSON para que el usuario nunca pierda sus ajustes ni amanezca apagado.
+    """
+    data = {}
+    from_nvda_conf = False
+    if config and hasattr(config, "conf"):
+        try:
+            if "audioEqualizer" in config.conf:
+                data = dict(config.conf["audioEqualizer"])
+                from_nvda_conf = True
+        except Exception as e:
+            log.warning(f"AudioEqualizer: No se pudo leer config.conf['audioEqualizer']: {e}")
+
+    # Si nvda.ini no tiene audioEqualizer o le faltan claves críticas, leer de backup JSON
+    state_file = _get_state_file()
+    if os.path.exists(state_file):
+        try:
+            with open(state_file, "r", encoding="utf-8") as f:
+                json_data = json.load(f)
+            if not from_nvda_conf or "enabled" not in data or "gains" not in data:
+                data = json_data
+            else:
+                for k, v in json_data.items():
+                    if k not in data or data[k] is None:
+                        data[k] = v
+        except Exception as e:
+            log.warning(f"AudioEqualizer: Error leyendo estado de respaldo JSON: {e}")
+
+    if not data:
+        return get_default_profile()
+
+    try:
         return EqualizerProfile(
-            enabled=c.get("enabled", False),
-            preamp=float(c.get("preamp", 0.0)),
-            auto_preamp=c.get("auto_preamp", False),
-            loudness=c.get("loudness", False),
-            mono=c.get("mono", False),
-            swap_channels=c.get("swap_channels", False),
-            balance=int(c.get("balance", constants.DEFAULT_BALANCE)),
-            tone_bass=float(c.get("tone_bass", constants.DEFAULT_TONE_BASS)),
-            tone_treble=float(c.get("tone_treble", constants.DEFAULT_TONE_TREBLE)),
-            sub_bass=c.get("sub_bass", False),
-            clarity=c.get("clarity", False),
-            anti_sibilance=c.get("anti_sibilance", False),
-            anti_fatigue=c.get("anti_fatigue", False),
-            ground_hum=c.get("ground_hum", False),
-            subsonic=c.get("subsonic", False),
-            nvda_voice=c.get("nvda_voice", False),
-            surround_3d=c.get("surround_3d", False),
-            radar_mode=c.get("radar_mode", False),
-            stereo_width=int(c.get("stereo_width", constants.DEFAULT_STEREO_WIDTH)),
-            profile_index=int(c.get("profile_index", 0)),
-            gains=parsed_gains,
+            enabled=_parse_bool(data.get("enabled"), constants.DEFAULT_ENABLED),
+            preamp=_parse_float(data.get("preamp"), constants.DEFAULT_PREAMP),
+            auto_preamp=_parse_bool(data.get("auto_preamp"), constants.DEFAULT_AUTO_PREAMP),
+            loudness=_parse_bool(data.get("loudness"), constants.DEFAULT_LOUDNESS),
+            mono=_parse_bool(data.get("mono"), constants.DEFAULT_MONO),
+            swap_channels=_parse_bool(data.get("swap_channels"), constants.DEFAULT_SWAP),
+            balance=_parse_int(data.get("balance"), constants.DEFAULT_BALANCE),
+            tone_bass=_parse_float(data.get("tone_bass"), constants.DEFAULT_TONE_BASS),
+            tone_treble=_parse_float(data.get("tone_treble"), constants.DEFAULT_TONE_TREBLE),
+            sub_bass=_parse_bool(data.get("sub_bass"), constants.DEFAULT_SUB_BASS),
+            clarity=_parse_bool(data.get("clarity"), constants.DEFAULT_CLARITY),
+            anti_sibilance=_parse_bool(data.get("anti_sibilance"), constants.DEFAULT_ANTI_SIBILANCE),
+            anti_fatigue=_parse_bool(data.get("anti_fatigue"), constants.DEFAULT_ANTI_FATIGUE),
+            ground_hum=_parse_bool(data.get("ground_hum"), constants.DEFAULT_GROUND_HUM),
+            subsonic=_parse_bool(data.get("subsonic"), constants.DEFAULT_SUBSONIC),
+            nvda_voice=_parse_bool(data.get("nvda_voice"), constants.DEFAULT_NVDA_VOICE),
+            surround_3d=_parse_bool(data.get("surround_3d"), constants.DEFAULT_SURROUND_3D),
+            radar_mode=_parse_bool(data.get("radar_mode"), constants.DEFAULT_RADAR_MODE),
+            stereo_width=_parse_int(data.get("stereo_width"), constants.DEFAULT_STEREO_WIDTH),
+            profile_index=_parse_int(data.get("profile_index"), 0),
+            gains=_parse_gains(data.get("gains")),
         )
     except Exception as e:
-        log.error(f"AudioEqualizer: Error cargando configuración: {e}", exc_info=True)
-        try:
-            from . import logger
-            logger.log_error(f"Error cargando configuración nativa: {e}", exc=e, component="Config")
-        except Exception:
-            pass
+        log.error(f"AudioEqualizer: Fallo inesperado al instanciar perfil: {e}", exc_info=True)
         return get_default_profile()
 
 
 def save_profile(profile: EqualizerProfile) -> None:
-    """Guarda los parámetros de un perfil en el archivo de configuración de NVDA.
+    """Guarda permanentemente los parámetros de un perfil en nvda.ini y en el estado atómico de respaldo.
 
-    Actualiza los valores en config.conf['audioEqualizer'] para que persistan
-    entre reinicios del lector de pantalla.
+    Garantiza que la configuración sobreviva a reinicios de NVDA, reinicios de equipo y cambios de perfil.
     """
+    # 1. Guardar en config.conf de NVDA y forzar escritura a nvda.ini
     try:
-        c = config.conf["audioEqualizer"]
-        c["enabled"] = profile.enabled
-        c["preamp"] = profile.preamp
-        c["auto_preamp"] = profile.auto_preamp
-        c["loudness"] = profile.loudness
-        c["mono"] = profile.mono
-        c["swap_channels"] = profile.swap_channels
-        c["balance"] = profile.balance
-        c["tone_bass"] = profile.tone_bass
-        c["tone_treble"] = profile.tone_treble
-        c["sub_bass"] = profile.sub_bass
-        c["clarity"] = profile.clarity
-        c["anti_sibilance"] = profile.anti_sibilance
-        c["anti_fatigue"] = profile.anti_fatigue
-        c["ground_hum"] = profile.ground_hum
-        c["subsonic"] = profile.subsonic
-        c["nvda_voice"] = profile.nvda_voice
-        c["surround_3d"] = profile.surround_3d
-        c["radar_mode"] = profile.radar_mode
-        c["stereo_width"] = profile.stereo_width
-        c["profile_index"] = profile.profile_index
-        c["gains"] = profile.gains
+        if config and hasattr(config, "conf"):
+            if "audioEqualizer" not in config.conf:
+                config.conf["audioEqualizer"] = {}
+            c = config.conf["audioEqualizer"]
+            c["enabled"] = bool(profile.enabled)
+            c["preamp"] = float(profile.preamp)
+            c["auto_preamp"] = bool(profile.auto_preamp)
+            c["loudness"] = bool(profile.loudness)
+            c["mono"] = bool(profile.mono)
+            c["swap_channels"] = bool(profile.swap_channels)
+            c["balance"] = int(profile.balance)
+            c["tone_bass"] = float(profile.tone_bass)
+            c["tone_treble"] = float(profile.tone_treble)
+            c["sub_bass"] = bool(profile.sub_bass)
+            c["clarity"] = bool(profile.clarity)
+            c["anti_sibilance"] = bool(profile.anti_sibilance)
+            c["anti_fatigue"] = bool(profile.anti_fatigue)
+            c["ground_hum"] = bool(profile.ground_hum)
+            c["subsonic"] = bool(profile.subsonic)
+            c["nvda_voice"] = bool(profile.nvda_voice)
+            c["surround_3d"] = bool(profile.surround_3d)
+            c["radar_mode"] = bool(profile.radar_mode)
+            c["stereo_width"] = int(profile.stereo_width)
+            c["profile_index"] = int(profile.profile_index)
+            c["gains"] = [float(g) for g in profile.gains]
+            
+            if hasattr(config.conf, "save"):
+                try:
+                    config.conf.save()
+                except Exception as e_save:
+                    log.warning(f"AudioEqualizer: No se pudo guardar config.conf inmediatamente: {e_save}")
     except Exception as e:
         log.error(f"AudioEqualizer: Error guardando configuración nativa: {e}", exc_info=True)
         try:
@@ -346,6 +479,9 @@ def save_profile(profile: EqualizerProfile) -> None:
             logger.log_error(f"Error guardando configuración en config.conf: {e}", exc=e, component="Config")
         except Exception:
             pass
+
+    # 2. Guardar en archivo de respaldo atómico JSON
+    _save_state_file(profile)
 
 
 def load_user_profiles() -> List[Dict[str, Any]]:

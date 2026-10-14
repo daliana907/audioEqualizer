@@ -1,7 +1,7 @@
 # Audio Equalizer
 
 * Autor: Daliana
-* Versión: 1.6.0
+* Versión: 1.6.1
 * Compatibilidad con NVDA: 2023.1 en adelante
 * Descarga de la versión estable: https://github.com/daliana907/audioEqualizer
 
@@ -21,6 +21,14 @@ Sus capacidades incluyen:
 *   Preamplificación Manual Extrema: Ahora puedes desactivar el preamplificador automático y empujar el volumen crudo de tu sistema hasta +20 dB para contenidos que se grabaron muy bajos.
 *   Filtros de Accesibilidad y Fatiga: Funciones especiales como compresión de sonidos estridentes (Anti-Sibilancia), mitigación de ruidos eléctricos graves (Ground Hum) y reducción de frecuencias que causan cansancio tras muchas horas de escucha (Anti-Fatiga).
 *   Voz de NVDA: Cuenta con un filtro exclusivo que aísla y potencia las frecuencias centrales donde habita la voz de NVDA, permitiendo que el lector resalte por encima de la música o de juegos muy ruidosos sin tener que bajar su volumen de forma general.
+
+## Novedades en la versión 1.6.1
+
+*   **Persistencia indestructible**: Corrección definitiva del problema donde el ecualizador amanecía apagado o se cambiaba a perfil "sin personalizar" al reiniciar NVDA o el equipo.
+*   **Doble capa de guardado**: La configuración ahora se guarda forzando la escritura inmediata a disco (`config.conf.save()`) y manteniendo simultáneamente un archivo de respaldo atómico JSON tolerante a cierres forzados (`NVDA + Control + F3`).
+*   **Lectura resiliente y a prueba de fallos**: Protección contra listas de ganancias serializadas como cadenas por ConfigObj y conversiones erróneas que forzaban la restauración de valores por defecto.
+*   **Guardado en botón Aplicar**: Al presionar el botón "Aplicar" en la ventana de ajustes, los cambios se guardan permanentemente en disco además de aplicarse acústicamente en tiempo real.
+*   **Restauración automática de sobreescrituras**: Los perfiles de fábrica modificados por el usuario se cargan automáticamente al iniciar NVDA.
 
 ## Novedades en la versión 1.6.0
 

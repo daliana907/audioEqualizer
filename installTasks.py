@@ -40,6 +40,8 @@ def onUninstall():
 			"audioEqualizer_user_profiles.json.tmp",
 			"audioEqualizer_factory_overrides.json",
 			"audioEqualizer_factory_overrides.json.tmp",
+			"audioEqualizer_state.json",
+			"audioEqualizer_state.json.tmp",
 		):
 			log_p = os.path.join(globalVars.appArgs.configPath, log_name)
 			if os.path.exists(log_p):

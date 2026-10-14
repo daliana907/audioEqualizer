@@ -1,7 +1,7 @@
 # Audio Equalizer for NVDA
 
 - Author: Daliana
-- Version: 1.6.0
+- Version: 1.6.1
 - Compatibility: NVDA 2023.1 and later
 - License: GNU GPL v2
 
@@ -71,6 +71,14 @@ Optional filters designed for headphone listening:
 - Conflict detection tool in the Tools menu to identify overlapping shortcuts.
 
 ---
+
+## What's new in 1.6.1
+
+- Indestructible Equalizer State Persistence: Fixed an issue where the equalizer could turn off or reset to flat/default on NVDA restart or PC reboot.
+- Dual-Layer Persistence Architecture: Synchronous write-through to `nvda.ini` via `config.conf.save()` coupled with an atomic JSON state backup file resistant to sudden crashes and `NVDA + Control + F3` restarts.
+- Resilient Configuration Loading: Tolerant parsing of gains lists formatted as comma-separated strings by ConfigObj, preventing silent fallback to factory defaults.
+- Apply Button Persistence: Clicking "Apply" in the settings dialog now immediately flushes and persists settings to disk.
+- Startup Factory Overrides: Customized factory presets are automatically restored into memory upon NVDA launch.
 
 ## What's new in 1.6.0
 
