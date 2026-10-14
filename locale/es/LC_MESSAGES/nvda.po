@@ -114,6 +114,9 @@ msgstr "Disminuye los graves rápidos en 1 dB."
 msgid "Ecualizador de Audio"
 msgstr "Ecualizador de Audio"
 
+msgid "Ecualizador de &Audio"
+msgstr "Ecualizador de &Audio"
+
 msgid "Ecualizador de audio"
 msgstr "Ecualizador de audio"
 

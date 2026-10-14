@@ -382,7 +382,8 @@ def load_profile() -> EqualizerProfile:
     if config and hasattr(config, "conf"):
         try:
             if "audioEqualizer" in config.conf:
-                data = dict(config.conf["audioEqualizer"])
+                sec = config.conf["audioEqualizer"]
+                data = {str(k): sec[k] for k in sec}
                 from_nvda_conf = True
         except Exception as e:
             log.warning(f"AudioEqualizer: No se pudo leer config.conf['audioEqualizer']: {e}")

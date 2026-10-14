@@ -66,30 +66,52 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         Agrupa de forma limpia y accesible el acceso a la ventana principal, la apertura
         del registro de auditoría, la comprobación de conflictos, la descarga de APO y la ayuda.
         """
-        self._tools_menu = wx.Menu()
-        
-        # Translators: Elemento de menú para abrir la ventana de configuración del ecualizador.
-        self._item_settings = self._tools_menu.Append(wx.Window.NewControlId(), _("Configuración..."))
-        gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._on_settings_menu, self._item_settings)
-        
-        # Translators: Elemento de menú para ver el registro técnico y auditoría de filtros.
-        self._item_log = self._tools_menu.Append(wx.Window.NewControlId(), _("Ver registro de filtros (Log)..."))
-        gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._open_log, self._item_log)
+        try:
+            tools_menu = getattr(gui.mainFrame.sysTrayIcon, "toolsMenu", None)
+            if not tools_menu:
+                return
 
-        # Translators: Elemento de menú para comprobar posibles conflictos con otros complementos.
-        self._item_conflicts = self._tools_menu.Append(wx.Window.NewControlId(), _("Comprobar conflictos con otros complementos..."))
-        gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._check_conflicts, self._item_conflicts)
+            if hasattr(self, "_submenu_item") and self._submenu_item:
+                try:
+                    tools_menu.DestroyItem(self._submenu_item)
+                except Exception:
+                    try:
+                        tools_menu.Remove(self._submenu_item)
+                    except Exception:
+                        pass
+                self._submenu_item = None
 
-        # Translators: Elemento de menú para descargar e instalar Equalizer APO.
-        self._item_install = self._tools_menu.Append(wx.Window.NewControlId(), _("Descargar e instalar motor de audio (Equalizer APO)..."))
-        gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._install_apo, self._item_install)
-        
-        self._submenu_item = gui.mainFrame.sysTrayIcon.toolsMenu.AppendSubMenu(
-            self._tools_menu, 
-            # Translators: Nombre del submenú en el menú Herramientas de NVDA.
-            _("Ecualizador de Audio"),
-            _("Opciones del ecualizador de audio")
-        )
+            self._tools_menu = wx.Menu()
+            
+            # Translators: Elemento de menú para abrir la ventana de configuración del ecualizador.
+            self._item_settings = self._tools_menu.Append(wx.Window.NewControlId(), _("Configuración..."))
+            gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._on_settings_menu, self._item_settings)
+            
+            # Translators: Elemento de menú para ver el registro técnico y auditoría de filtros.
+            self._item_log = self._tools_menu.Append(wx.Window.NewControlId(), _("Ver registro de filtros (Log)..."))
+            gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._open_log, self._item_log)
+
+            # Translators: Elemento de menú para comprobar posibles conflictos con otros complementos.
+            self._item_conflicts = self._tools_menu.Append(wx.Window.NewControlId(), _("Comprobar conflictos con otros complementos..."))
+            gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._check_conflicts, self._item_conflicts)
+
+            # Translators: Elemento de menú para descargar e instalar Equalizer APO.
+            self._item_install = self._tools_menu.Append(wx.Window.NewControlId(), _("Descargar e instalar motor de audio (Equalizer APO)..."))
+            gui.mainFrame.sysTrayIcon.Bind(wx.EVT_MENU, self._install_apo, self._item_install)
+            
+            self._submenu_item = tools_menu.AppendSubMenu(
+                self._tools_menu, 
+                # Translators: Nombre del submenú en el menú Herramientas de NVDA.
+                _("Ecualizador de &Audio"),
+                _("Opciones del ecualizador de audio")
+            )
+        except Exception as e:
+            try:
+                from logHandler import log
+                log.error(f"AudioEqualizer: Error registrando submenú en Herramientas: {e}", exc_info=True)
+            except Exception:
+                pass
+            self._submenu_item = None
 
     def _on_settings_menu(self, evt):
         """Abre la ventana de configuración accesible al pulsar en el menú."""

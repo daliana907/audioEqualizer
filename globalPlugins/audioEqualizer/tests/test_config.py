@@ -340,6 +340,33 @@ class TestConfigPersistence(unittest.TestCase):
         self.assertEqual(loaded.profile_index, 3)
         self.assertEqual(loaded.gains[0], 2.0)
 
+    def test_load_profile_with_aggregated_section_like_nvda(self):
+        """Simula AggregatedSection de NVDA (que solo itera claves, no pares clave-valor)."""
+        from audioEqualizer import config as eq_config
+
+        class MockAggregatedSection:
+            def __init__(self, data):
+                self._data = data
+            def __iter__(self):
+                return iter(self._data.keys())
+            def __getitem__(self, key):
+                return self._data[key]
+            def __contains__(self, key):
+                return key in self._data
+
+        mock_nvda_config.conf["audioEqualizer"] = MockAggregatedSection({
+            "enabled": True,
+            "preamp": 3.0,
+            "profile_index": 5,
+            "gains": [1.5] * 31,
+        })
+
+        loaded = eq_config.load_profile()
+        self.assertTrue(loaded.enabled)
+        self.assertEqual(loaded.preamp, 3.0)
+        self.assertEqual(loaded.profile_index, 5)
+        self.assertEqual(loaded.gains[0], 1.5)
+
 
 if __name__ == "__main__":
     unittest.main()

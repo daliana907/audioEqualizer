@@ -114,6 +114,9 @@ msgstr "Decreases quick bass by 1 dB."
 msgid "Ecualizador de Audio"
 msgstr "Audio Equalizer"
 
+msgid "Ecualizador de &Audio"
+msgstr "&Audio Equalizer"
+
 msgid "Ecualizador de audio"
 msgstr "Audio equalizer"
 
