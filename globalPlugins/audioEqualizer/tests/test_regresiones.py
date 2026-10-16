@@ -417,12 +417,19 @@ class RegresionesV160(unittest.TestCase):
         """Verifica que surround_3d use HRTF anatómico (0.28ms, all-pass, concha) y NUNCA el delay robótico de 15ms."""
         from audioEqualizer.apo_backend import ApoBackend
         backend = ApoBackend()
-        backend.update(
-            enabled=True,
-            gains=[0.0] * 31,
-            preamp=0.0,
-            surround_3d=True
-        )
+        # Hermética: no toca el disco real (en la página no existe la carpeta de APO).
+        backend._enabled = True
+        backend._gains = [0.0] * 31
+        backend._preamp = 0.0
+        backend._balance = 0
+        backend._mono = False
+        backend._swap_channels = False
+        backend._tone_bass = 0.0
+        backend._tone_treble = 0.0
+        for _k in ("loudness", "sub_bass", "clarity", "anti_sibilance", "anti_fatigue", "ground_hum", "subsonic", "nvda_voice", "radar_mode"):
+            setattr(backend, "_" + _k, False)
+        backend._stereo_width = 100
+        backend._surround_3d = True
         content = "\n".join(backend._build_config_lines())
         # No debe tener el antiguo retardo de 15 ms que generaba filtrado en peine robótico
         self.assertNotIn("Delay: 15 ms", content)

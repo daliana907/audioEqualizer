@@ -27,7 +27,6 @@ $RECYCLE.BIN/
 # Generados/respaldos/temporales comunes (no versionar)
 *.log
 *.pyo
-*.mo
 resultado_github.txt
 1_*
 2_*
