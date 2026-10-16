@@ -45,11 +45,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         Equalizer APO y el controlador de audio, y añade el submenú 'Ecualizador de Audio'
         al menú Herramientas de la bandeja del sistema.
         """
-        super().__init__()
         if globalVars and getattr(globalVars.appArgs, "secureMode", False):
             import logHandler
             logHandler.log.warning("Audio Equalizer: NVDA en modo seguro. Se cancela la carga del complemento por seguridad.")
             raise globalPluginHandler.ActionCancelled()
+        super().__init__()
         
         # Registrar esquema en NVDA config antes de cargar o guardar parámetros
         config.init_config_spec()
@@ -57,18 +57,33 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         # Inyección de dependencias: conectamos el controlador con el backend real de APO
         backend = ApoBackend()
         self._controller = EqualizerController(backend)
+        self._submenu_item = None
+        self._tools_menu = None
+        self._menu_retry = 0
         
         self._create_menu()
 
-    def _create_menu(self):
+    def _create_menu(self, _retry=0):
         """Crea el submenú 'Ecualizador de Audio' dentro del menú Herramientas de NVDA.
 
         Agrupa de forma limpia y accesible el acceso a la ventana principal, la apertura
         del registro de auditoría, la comprobación de conflictos, la descarga de APO y la ayuda.
+        Si toolsMenu aún no existe (NVDA arrancando), reintenta vía CallLater.
         """
         try:
-            tools_menu = getattr(gui.mainFrame.sysTrayIcon, "toolsMenu", None)
+            try:
+                tools_menu = getattr(gui.mainFrame.sysTrayIcon, "toolsMenu", None)
+            except Exception:
+                tools_menu = None
             if not tools_menu:
+                if _retry < 5:
+                    try:
+                        wx.CallLater(500, self._create_menu, _retry + 1)
+                    except Exception:
+                        try:
+                            wx.CallAfter(self._create_menu, _retry + 1)
+                        except Exception:
+                            pass
                 return
 
             if hasattr(self, "_submenu_item") and self._submenu_item:
@@ -102,7 +117,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self._submenu_item = tools_menu.AppendSubMenu(
                 self._tools_menu, 
                 # Translators: Nombre del submenú en el menú Herramientas de NVDA.
-                _("Ecualizador de &Audio"),
+                _("&Ecualizador de Audio"),
                 _("Opciones del ecualizador de audio")
             )
         except Exception as e:
@@ -139,8 +154,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         Cierra el backend de audio y elimina el submenú de Herramientas para que no
         queden elementos huérfanos en la interfaz gráfica.
         """
-        if self._controller:
-            self._controller.terminate()
+        try:
+            if getattr(self, "_controller", None):
+                self._controller.terminate()
+        except Exception:
+            pass
 
         for item_attr in ("_item_settings", "_item_log", "_item_conflicts", "_item_install"):
             item = getattr(self, item_attr, None)
@@ -151,8 +169,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     pass
 
         try:
-            tools_menu = getattr(gui.mainFrame.sysTrayIcon, "toolsMenu", None)
-            if tools_menu and hasattr(self, "_submenu_item") and self._submenu_item:
+            try:
+                tools_menu = getattr(gui.mainFrame.sysTrayIcon, "toolsMenu", None)
+            except Exception:
+                tools_menu = None
+            if tools_menu and getattr(self, "_submenu_item", None):
                 try:
                     tools_menu.DestroyItem(self._submenu_item)
                 except Exception:
@@ -162,7 +183,24 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                         pass
         except Exception:
             pass
-        super().terminate()
+        try:
+            self._submenu_item = None
+        except Exception:
+            pass
+        try:
+            _m = getattr(self, "_tools_menu", None)
+            if _m is not None:
+                try:
+                    _m.Destroy()
+                except Exception:
+                    pass
+            self._tools_menu = None
+        except Exception:
+            pass
+        try:
+            super().terminate()
+        except Exception:
+            pass
 
     # --- Comandos y Atajos de Teclado Reasignables en NVDA ---
 
@@ -396,11 +434,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self._controller.toggle_ground_hum()
 
     @script(
-        description=_("Activa o desactiva el efecto 3D espacial (Haas)."),
+        description=_("Activa o desactiva el audio 3D inmersivo (Binaural HRTF profesional)."),
         category=scriptCategory,
     )
     def script_toggleSurround3d(self, gesture):
-        """Conmuta el efecto 3D espacial y lo anuncia por voz."""
+        """Conmuta el audio 3D inmersivo y lo anuncia por voz."""
         self._controller.toggle_surround_3d()
 
     @script(

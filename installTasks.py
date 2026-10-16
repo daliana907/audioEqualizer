@@ -19,34 +19,51 @@ def onUninstall():
 	"""
 	try:
 		import config
+		conf_obj = getattr(config, "conf", None)
 		modified = False
-		if "audioEqualizer" in config.conf:
-			del config.conf["audioEqualizer"]
-			modified = True
-		if "audioEqualizer" in getattr(config.conf, "spec", {}):
-			del config.conf.spec["audioEqualizer"]
-			modified = True
-		if modified:
-			config.conf.save()
+		if conf_obj is not None:
+			if "audioEqualizer" in conf_obj:
+				try:
+					del conf_obj["audioEqualizer"]
+					modified = True
+				except Exception:
+					pass
+			try:
+				spec = getattr(conf_obj, "spec", {})
+			except Exception:
+				spec = {}
+			try:
+				if "audioEqualizer" in spec:
+					del conf_obj.spec["audioEqualizer"]
+					modified = True
+			except Exception:
+				pass
+			if modified and hasattr(conf_obj, "save"):
+				try:
+					conf_obj.save()
+				except Exception:
+					pass
 		log.info("Audio Equalizer: configuración eliminada del perfil al desinstalar.")
 	except Exception as e:
 		log.warning(f"Audio Equalizer: error al limpiar configuración en desinstalación: {e}")
 	try:
 		import globalVars
-		for log_name in (
-			"audioEqualizer.log",
-			"audioEqualizer.log.old",
-			"audioEqualizer_user_profiles.json",
-			"audioEqualizer_user_profiles.json.tmp",
-			"audioEqualizer_factory_overrides.json",
-			"audioEqualizer_factory_overrides.json.tmp",
-			"audioEqualizer_state.json",
-			"audioEqualizer_state.json.tmp",
-		):
-			log_p = os.path.join(globalVars.appArgs.configPath, log_name)
-			if os.path.exists(log_p):
-				try: os.remove(log_p)
-				except OSError: pass
+		config_path = getattr(getattr(globalVars, "appArgs", None), "configPath", None)
+		if config_path:
+			for log_name in (
+				"audioEqualizer.log",
+				"audioEqualizer.log.old",
+				"audioEqualizer_user_profiles.json",
+				"audioEqualizer_user_profiles.json.tmp",
+				"audioEqualizer_factory_overrides.json",
+				"audioEqualizer_factory_overrides.json.tmp",
+				"audioEqualizer_state.json",
+				"audioEqualizer_state.json.tmp",
+			):
+				log_p = os.path.join(config_path, log_name)
+				if os.path.exists(log_p):
+					try: os.remove(log_p)
+					except OSError: pass
 	except Exception:
 		pass
 	try:
@@ -63,14 +80,43 @@ def onUninstall():
 				try: os.remove(addon_config)
 				except OSError: pass
 			if os.path.exists(main_config):
+				tmp_path = main_config + ".tmp"
 				try:
+					try:
+						if os.path.getsize(main_config) > 1024 * 1024:
+							log.warning("Audio Equalizer: config.txt supera 1 MB; se omite limpieza por seguridad.")
+							continue
+					except OSError:
+						pass
 					with open(main_config, "r", encoding="utf-8-sig") as f:
-						lines = f.readlines()
+						content = f.read(1024 * 1024 + 1)
+					if len(content) > 1024 * 1024:
+						log.warning("Audio Equalizer: config.txt supera 1 MB; se omite limpieza por seguridad.")
+						continue
+					lines = content.splitlines(keepends=True)
 					new_lines = [l for l in lines if "nvda_equalizer.txt" not in l]
 					if len(new_lines) != len(lines):
-						with open(main_config, "w", encoding="utf-8") as f:
+						with open(tmp_path, "w", encoding="utf-8") as f:
 							f.writelines(new_lines)
+						for _attempt in range(3):
+							try:
+								os.replace(tmp_path, main_config)
+								break
+							except OSError:
+								if _attempt == 2:
+									raise
+								try:
+									import time as _time_mod
+									_time_mod.sleep(0.1 * (_attempt + 1))
+								except Exception:
+									pass
 				except Exception:
 					pass
+				finally:
+					try:
+						if os.path.exists(tmp_path):
+							os.remove(tmp_path)
+					except OSError:
+						pass
 	except Exception:
 		pass

@@ -14,7 +14,7 @@ mock_nvda_config.conf = {'audioEqualizer': {}}
 sys.modules['config'] = mock_nvda_config
 
 mock_log = types.ModuleType('logHandler')
-mock_log.log = types.SimpleNamespace(info=lambda *a, **k: None, error=lambda *a, **k: None, debug=lambda *a, **k: None)
+mock_log.log = types.SimpleNamespace(info=lambda *a, **k: None, error=lambda *a, **k: None, debug=lambda *a, **k: None, warning=lambda *a, **k: None)
 sys.modules['logHandler'] = mock_log
 
 mock_gph = types.ModuleType('globalPluginHandler')
@@ -116,6 +116,41 @@ class TestEqualizerProfile(unittest.TestCase):
         self.assertTrue(cloned.surround_3d)
         self.assertTrue(cloned.radar_mode)
 
+    def test_multichannel_properties(self):
+        from audioEqualizer import constants
+        self.assertEqual(self.profile.channel_mode, "stereo")
+        self.assertEqual(self.profile.center_gain, 0.0)
+        self.assertEqual(self.profile.subwoofer_gain, 0.0)
+        self.assertEqual(self.profile.surround_gain, 0.0)
+
+        # Asignar valores válidos
+        self.profile.channel_mode = "5.1"
+        self.profile.center_gain = 3.5
+        self.profile.subwoofer_gain = -2.0
+        self.profile.surround_gain = 1.0
+
+        self.assertEqual(self.profile.channel_mode, "5.1")
+        self.assertEqual(self.profile.center_gain, 3.5)
+        self.assertEqual(self.profile.subwoofer_gain, -2.0)
+        self.assertEqual(self.profile.surround_gain, 1.0)
+
+        # Clamping
+        self.profile.center_gain = 25.0
+        self.assertEqual(self.profile.center_gain, constants.MAX_CHANNEL_GAIN)
+        self.profile.center_gain = -30.0
+        self.assertEqual(self.profile.center_gain, constants.MIN_CHANNEL_GAIN)
+
+        # Modo inválido
+        self.profile.channel_mode = "modo_invalido"
+        self.assertEqual(self.profile.channel_mode, "stereo")
+
+        # Clonación profunda de multicanal
+        self.profile.channel_mode = "downmix_5_1"
+        self.profile.center_gain = 2.0
+        cloned = self.profile.clone()
+        self.assertEqual(cloned.channel_mode, "downmix_5_1")
+        self.assertEqual(cloned.center_gain, 2.0)
+
 
 from audioEqualizer.dummy_backend import DummyBackend
 from audioEqualizer.equalizer import EqualizerController
@@ -161,18 +196,31 @@ class TestEqualizerController(unittest.TestCase):
 
 class TestStereoWidthApoFormatting(unittest.TestCase):
 
-    def test_stereo_width_greater_than_100_has_valid_plus_separator(self):
+    def test_stereo_width_greater_than_100_emite_copy(self):
         from audioEqualizer.apo_backend import ApoBackend
         backend = ApoBackend()
         backend._enabled = True
         backend._stereo_width = 150
         lines = backend._build_config_lines()
         copy_line = next((l for l in lines if l.startswith("Copy: L=")), None)
-        self.assertIsNotNone(copy_line)
-        # Debe contener el separador '+' antes del coeficiente negativo de R para que Equalizer APO lo parsee
-        self.assertIn("*L+", copy_line)
+        # En Equalizer APO, la sustracción en Copy: requiere el operador '+' con factor negativo '+-'
+        # Un signo '-' directo hace que APO interprete la expresión como el escalar constante 1.0 (silenciando el audio).
         self.assertIn("L=1.325*L+-0.175*R", copy_line)
-        self.assertIn("R=-0.175*L+1.325*R", copy_line)
+        self.assertIn("R=1.325*R+-0.175*L", copy_line)
+
+    def test_stereo_width_suprimido_en_modo_compatible(self):
+        from audioEqualizer import apo_backend
+        anterior = apo_backend.DISABLE_COPY_COMMANDS
+        apo_backend.DISABLE_COPY_COMMANDS = True
+        try:
+            backend = apo_backend.ApoBackend()
+            backend._enabled = True
+            backend._stereo_width = 150
+            lines = backend._build_config_lines()
+            self.assertFalse(any(l.startswith("Copy:") for l in lines))
+            self.assertTrue(any(l.startswith("GraphicEQ:") for l in lines))
+        finally:
+            apo_backend.DISABLE_COPY_COMMANDS = anterior
 
     def test_stereo_width_less_than_100_has_valid_plus_separator(self):
         from audioEqualizer.apo_backend import ApoBackend
@@ -184,6 +232,46 @@ class TestStereoWidthApoFormatting(unittest.TestCase):
         self.assertIsNotNone(copy_line)
         self.assertIn("L=0.75*L+0.25*R", copy_line)
         self.assertIn("R=0.25*L+0.75*R", copy_line)
+
+
+class TestStereoChannelApproximations(unittest.TestCase):
+
+    def _backend_estereo(self):
+        from audioEqualizer.apo_backend import ApoBackend
+        backend = ApoBackend()
+        backend._enabled = True
+        backend._balance = 0
+        backend._mono = False
+        backend._swap_channels = False
+        backend._gains = [0.0] * 31
+        backend._preamp = 0.0
+        for k in ("loudness", "sub_bass", "clarity", "anti_sibilance", "anti_fatigue", "ground_hum", "subsonic", "nvda_voice", "surround_3d", "radar_mode"):
+            setattr(backend, "_" + k, False)
+        backend._stereo_width = 100
+        backend._tone_bass = 0.0
+        backend._tone_treble = 0.0
+        backend._channel_mode = "stereo"
+        backend._center_gain = 0.0
+        backend._subwoofer_gain = 0.0
+        backend._surround_gain = 0.0
+        return backend
+
+    def test_voces_y_graves_suenan_en_estereo(self):
+        backend = self._backend_estereo()
+        backend._center_gain = 3.0
+        backend._subwoofer_gain = 4.0
+        content = "\n".join(backend._build_config_lines())
+        self.assertIn("Filter: ON PK Fc 2800 Hz Gain 3.0 dB", content)
+        self.assertIn("Filter: ON LS Fc 70 Hz Gain 4.0 dB", content)
+        self.assertFalse(any(l.startswith("Copy:") for l in content.splitlines()))
+
+    def test_traseros_no_inventan_en_estereo(self):
+        backend = self._backend_estereo()
+        backend._surround_gain = 6.0
+        content = "\n".join(backend._build_config_lines())
+        self.assertNotIn("2800 Hz", content)
+        self.assertNotIn("Fc 70 Hz Gain 6.0", content)
+        self.assertFalse(any(l.startswith("Copy:") for l in content.splitlines()))
 
 
 class TestConfigParsers(unittest.TestCase):
@@ -366,6 +454,62 @@ class TestConfigPersistence(unittest.TestCase):
         self.assertEqual(loaded.preamp, 3.0)
         self.assertEqual(loaded.profile_index, 5)
         self.assertEqual(loaded.gains[0], 1.5)
+
+    def test_multichannel_persistence(self):
+        from audioEqualizer import config as eq_config
+        profile = eq_config.EqualizerProfile(
+            enabled=True,
+            channel_mode="5.1",
+            center_gain=4.0,
+            subwoofer_gain=-3.0,
+            surround_gain=2.5,
+        )
+        eq_config.save_profile(profile)
+
+        # Verificar que se guardó en el diccionario de NVDA
+        c = mock_nvda_config.conf["audioEqualizer"]
+        self.assertEqual(c["channel_mode"], "5.1")
+        self.assertEqual(c["center_gain"], 4.0)
+        self.assertEqual(c["subwoofer_gain"], -3.0)
+        self.assertEqual(c["surround_gain"], 2.5)
+
+        # Cargar de nuevo y verificar
+        loaded = eq_config.load_profile()
+        self.assertEqual(loaded.channel_mode, "5.1")
+        self.assertEqual(loaded.center_gain, 4.0)
+        self.assertEqual(loaded.subwoofer_gain, -3.0)
+        self.assertEqual(loaded.surround_gain, 2.5)
+
+    def test_multichannel_apo_backend_directives(self):
+        from audioEqualizer.apo_backend import ApoBackend
+        backend = ApoBackend()
+        backend._enabled = True
+        backend._channel_mode = "downmix_5_1"
+        backend._center_gain = 3.0
+        lines = backend._build_config_lines()
+
+        # Debe contener la directiva de downmix con factores positivos y sintaxis aditiva '+'
+        downmix_lines = [l for l in lines if "Mezcla inteligente 5.1 a Estereo" in l or "Copy: L=" in l]
+        self.assertTrue(len(downmix_lines) >= 2)
+        copy_line = [l for l in lines if l.startswith("Copy: L=")][0]
+        self.assertIn("1.0*L", copy_line)
+        self.assertIn("*C", copy_line)
+        self.assertIn("*RL", copy_line)
+        self.assertIn("*SUB", copy_line)
+        self.assertNotIn("-", copy_line)  # Sin operador infijo de resta que cause DC bias en APO
+
+        # Probar modo 5.1 discreto
+        backend._channel_mode = "5.1"
+        backend._center_gain = 3.0
+        backend._subwoofer_gain = -2.0
+        backend._surround_gain = 1.5
+        lines51 = backend._build_config_lines()
+        self.assertTrue(any("Channel: C" in l for l in lines51))
+        self.assertTrue(any("Preamp: 3.0 dB" in l for l in lines51))
+        self.assertTrue(any("Channel: SUB LFE" in l for l in lines51))
+        self.assertTrue(any("Preamp: -2.0 dB" in l for l in lines51))
+        self.assertTrue(any("Channel: RL RR SL SR" in l for l in lines51))
+        self.assertTrue(any("Preamp: 1.5 dB" in l for l in lines51))
 
 
 if __name__ == "__main__":

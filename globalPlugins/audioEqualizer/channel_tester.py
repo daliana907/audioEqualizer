@@ -51,6 +51,35 @@ except ImportError:
             pass
     ui = _UIFallback()
 
+def _safe_ui_message(msg: str) -> None:
+    """Envía ui.message solo vía core.callLater/wx.CallAfter desde hilos secundarios."""
+    try:
+        import core
+        try:
+            core.callLater(0, ui.message, msg)
+            return
+        except Exception:
+            pass
+    except Exception:
+        pass
+    try:
+        import wx as _wx
+        try:
+            _wx.CallAfter(ui.message, msg)
+            return
+        except Exception:
+            pass
+    except Exception:
+        pass
+    # Solo como último recurso en hilo principal se permite llamada directa.
+    try:
+        import threading
+        if threading.current_thread() is threading.main_thread():
+            ui.message(msg)
+    except Exception:
+        pass
+
+
 _TEST_WAV_PATH = os.path.join(tempfile.gettempdir(), "audio_equalizer_channel_test.wav")
 
 
@@ -160,11 +189,7 @@ def play_channel_test() -> None:
                 logger.log_error(f"Error en reproducción de canales: {e}", exc=e, component="ChannelTester")
             except Exception:
                 pass
-            try:
-                import core
-                core.callLater(0, ui.message, _("Error al reproducir comprobación de canales: {e}").format(e=e))
-            except Exception:
-                ui.message(_("Error al reproducir comprobación de canales: {e}").format(e=e))
+            _safe_ui_message(_("Error al reproducir comprobación de canales: {e}").format(e=e))
         finally:
             _test_in_progress.release()
 

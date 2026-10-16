@@ -43,6 +43,10 @@ class TestLoggerDiagnostics(unittest.TestCase):
         self.assertIn("test_key: test_value", content)
 
     def test_write_audit_log(self):
+        try:
+            pos = os.path.getsize(logger.LOG_FILE_PATH)
+        except OSError:
+            pos = 0
         logger.write_audit_log(
             enabled=True,
             preamp=-2.0,
@@ -69,10 +73,12 @@ class TestLoggerDiagnostics(unittest.TestCase):
             apo_include_ok=True
         )
         with open(logger.LOG_FILE_PATH, "r", encoding="utf-8") as f:
+            f.seek(pos)
             content = f.read()
         self.assertIn("ESTADO DEL ECUALIZADOR: [ACTIVADO Y PROCESANDO AUDIO]", content)
         self.assertIn("Filtro subs", content)
-        self.assertIn("120% (Procesamiento matricial)", content)
+        self.assertIn("120%", content)
+        self.assertNotIn("[DESACTIVADO EN MODO COMPATIBLE]", content)
         self.assertIn("Efecto 3D Espacial (Haas): [EFECTO REAL: APLICADO]", content)
         self.assertIn("Modo Radar Posicional (HRTF crossfeed): [EFECTO REAL: APLICADO]", content)
 

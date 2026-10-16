@@ -61,6 +61,10 @@ class AudioBackend(abc.ABC):
         surround_3d: bool = False,
         radar_mode: bool = False,
         stereo_width: int = 100,
+        channel_mode: str = "stereo",
+        center_gain: float = 0.0,
+        subwoofer_gain: float = 0.0,
+        surround_gain: float = 0.0,
     ) -> None:
         """Transmite el conjunto completo de parámetros acústicos, filtros y ganancias al motor de audio."""
         pass

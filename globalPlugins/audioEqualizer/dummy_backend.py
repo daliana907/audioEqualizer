@@ -63,6 +63,10 @@ class DummyBackend(AudioBackend):
         surround_3d: bool = False,
         radar_mode: bool = False,
         stereo_width: int = 100,
+        channel_mode: str = "stereo",
+        center_gain: float = 0.0,
+        subwoofer_gain: float = 0.0,
+        surround_gain: float = 0.0,
     ) -> None:
         """Almacena el estado completo de ecualización y procesamiento en memoria."""
         self._enabled = enabled
@@ -85,6 +89,10 @@ class DummyBackend(AudioBackend):
         self.surround_3d = surround_3d
         self.radar_mode = radar_mode
         self.stereo_width = stereo_width
+        self.channel_mode = channel_mode
+        self.center_gain = center_gain
+        self.subwoofer_gain = subwoofer_gain
+        self.surround_gain = surround_gain
 
     def close(self) -> None:
         """No requiere liberación de recursos externos al ser una simulación en memoria."""

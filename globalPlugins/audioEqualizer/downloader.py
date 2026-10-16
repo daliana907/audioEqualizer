@@ -112,23 +112,43 @@ def get_downloads_dir() -> str:
     """
     try:
         import ctypes
-        import uuid
-        FOLDERID_Downloads = uuid.UUID('{374DE290-123F-4565-9164-39C4925E467B}')
-        buf = ctypes.c_wchar_p()
-        res = ctypes.windll.shell32.SHGetKnownFolderPath(
-            ctypes.byref(ctypes.c_buffer(FOLDERID_Downloads.bytes_le)),
-            0,
-            None,
-            ctypes.byref(buf)
-        )
-        if res == 0 and buf.value:
-            downloads_path = buf.value
+        from ctypes import wintypes
+
+        class GUID(ctypes.Structure):
+            _fields_ = [
+                ("Data1", wintypes.DWORD),
+                ("Data2", wintypes.WORD),
+                ("Data3", wintypes.WORD),
+                ("Data4", wintypes.BYTE * 8),
+            ]
+
+        _ole32 = ctypes.windll.ole32
+        _shell32 = ctypes.windll.shell32
+        try:
+            _ole32.CLSIDFromString.argtypes = [wintypes.LPCWSTR, ctypes.POINTER(GUID)]
+            _ole32.CLSIDFromString.restype = ctypes.c_long
+            _shell32.SHGetKnownFolderPath.argtypes = [ctypes.POINTER(GUID), wintypes.DWORD, wintypes.HANDLE, ctypes.POINTER(ctypes.c_wchar_p)]
+            _shell32.SHGetKnownFolderPath.restype = ctypes.c_long
+            _ole32.CoTaskMemFree.argtypes = [ctypes.c_void_p]
+            _ole32.CoTaskMemFree.restype = None
+        except Exception:
+            pass
+        _guid = GUID()
+        hr = _ole32.CLSIDFromString("{374DE290-123F-4565-9164-39C4925E467B}", ctypes.byref(_guid))
+        if hr == 0:
+            _buf = ctypes.c_wchar_p()
+            hr2 = _shell32.SHGetKnownFolderPath(ctypes.byref(_guid), 0, None, ctypes.byref(_buf))
             try:
-                ctypes.windll.ole32.CoTaskMemFree(buf)
-            except Exception:
-                pass
-            if os.path.isdir(downloads_path):
-                return downloads_path
+                if hr2 == 0 and _buf.value:
+                    downloads_path = _buf.value
+                    if os.path.isdir(downloads_path):
+                        return downloads_path
+            finally:
+                try:
+                    if _buf.value:
+                        _ole32.CoTaskMemFree(ctypes.cast(_buf, ctypes.c_void_p))
+                except Exception:
+                    pass
     except Exception as e:
         log.debug(f"AudioEqualizer: Error obteniendo carpeta Descargas vía API: {e}")
 
@@ -139,6 +159,75 @@ def get_downloads_dir() -> str:
         except Exception:
             pass
     return fallback
+
+
+def _compute_sha256(path: str) -> str:
+    """Calcula SHA-256 de un fichero por bloques para no cargar instaladores en RAM."""
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def verify_installer(path: str, info: dict) -> tuple:
+    """Verifica tamaño exacto/mínimo y opcionalmente SHA-256 antes de ejecutar.
+
+    Devuelve (ok, motivo). Re-verificar justo antes de os.startfile es obligatorio
+    porque el fichero pudo cambiar entre la descarga y la ejecución (TOCTOU).
+    """
+    try:
+        if not path or not os.path.isfile(path):
+            return False, "no existe el instalador"
+        size = os.path.getsize(path)
+        min_expected = int(info.get("min_expected_bytes", 5000000) or 5000000)
+        if size < min_expected:
+            return False, f"tamaño {size} < mínimo {min_expected}"
+        exact = info.get("exact_size")
+        if exact is not None:
+            try:
+                if size != int(exact):
+                    return False, f"tamaño {size} != esperado {exact}"
+            except (ValueError, TypeError):
+                pass
+        expected_sha = info.get("sha256")
+        if expected_sha:
+            actual = _compute_sha256(path)
+            if actual.lower() != str(expected_sha).lower():
+                return False, "SHA-256 no coincide"
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+def _safe_launch_installer(path: str, info: dict, parent_win=None) -> bool:
+    """Re-verifica el instalador justo antes de ejecutar y lo lanza."""
+    ok, reason = verify_installer(path, info)
+    if not ok:
+        log.error(f"AudioEqualizer: Instalador no verificado ({reason}): {path}")
+        try:
+            if wx and parent_win is not None:
+                wx.MessageBox(_("El instalador no pasó la verificación ({reason}). Descárguelo de nuevo.").format(reason=reason), _("Error"), wx.OK | wx.ICON_ERROR, parent=parent_win)
+            else:
+                ui.message(_("El instalador no pasó la verificación. Descárguelo de nuevo."))
+        except Exception:
+            pass
+        return False
+    try:
+        os.startfile(path)
+        ui.message(_("Abriendo instalador de Equalizer APO. Sigue las instrucciones del asistente en pantalla."))
+        return True
+    except Exception as e:
+        if getattr(e, "winerror", None) == 1223:
+            ui.message(_("Apertura del instalador cancelada."))
+        else:
+            try:
+                if wx:
+                    wx.MessageBox(_("No se pudo abrir el instalador: {e}").format(e=e), _("Error"), wx.OK | wx.ICON_ERROR, parent=parent_win)
+            except Exception:
+                pass
+        return False
 
 
 class DownloadProgressDialog(wx.Dialog if wx else object):
@@ -166,6 +255,8 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
         self._is_cancelled = False
         self._download_thread = None
         self._last_spoken_percent = -1
+        self._active_resp = None
+        self._resp_lock = threading.Lock()
 
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -215,103 +306,174 @@ class DownloadProgressDialog(wx.Dialog if wx else object):
         self._cancel()
 
     def _cancel(self):
-        """Marca la descarga como cancelada, limpia el archivo temporal y cierra la ventana."""
+        """Marca la descarga como cancelada, cierra el socket, limpia el temporal y cierra la ventana."""
         if not self._is_cancelled:
             self._is_cancelled = True
-            self._lbl_status.SetLabel("Cancelando descarga...")
+            try:
+                with getattr(self, "_resp_lock", threading.Lock()):
+                    resp = getattr(self, "_active_resp", None)
+                if resp is not None:
+                    try:
+                        resp.close()
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+            try:
+                if hasattr(self, "_lbl_status") and self._lbl_status:
+                    self._lbl_status.SetLabel("Cancelando descarga...")
+            except Exception:
+                pass
             ui.message(_("Cancelando descarga de Equalizer APO..."))
             try:
                 if os.path.exists(self._tmp_path):
                     os.remove(self._tmp_path)
             except Exception:
                 pass
-            wx.CallAfter(self._close_with_result, False, "Descarga cancelada por el usuario.")
+            try:
+                wx.CallAfter(self._close_with_result, False, "Descarga cancelada por el usuario.")
+            except Exception:
+                pass
 
     def _update_progress(self, downloaded_bytes, total_bytes):
         """Actualiza la barra de progreso y anuncia por voz los hitos del 25%, 50%, 75% y 100%."""
         if self._is_cancelled:
             return
-        if total_bytes > 0:
-            percent = int((downloaded_bytes / total_bytes) * 100)
-            percent = min(100, max(0, percent))
-            mb_down = downloaded_bytes / (1024 * 1024)
-            mb_tot = total_bytes / (1024 * 1024)
-            status_str = f"Descargado: {mb_down:.1f} MB de {mb_tot:.1f} MB ({percent}%)"
-            self._gauge.SetValue(percent)
-            self._lbl_status.SetLabel(status_str)
+        try:
+            if total_bytes > 0:
+                percent = int((downloaded_bytes / total_bytes) * 100)
+                percent = min(100, max(0, percent))
+                mb_down = downloaded_bytes / (1024 * 1024)
+                mb_tot = total_bytes / (1024 * 1024)
+                status_str = f"Descargado: {mb_down:.1f} MB de {mb_tot:.1f} MB ({percent}%)"
+                if hasattr(self, "_gauge") and self._gauge:
+                    self._gauge.SetValue(percent)
+                if hasattr(self, "_lbl_status") and self._lbl_status:
+                    self._lbl_status.SetLabel(status_str)
 
-            # Anunciar por voz los hitos de descarga
-            if percent in (25, 50, 75, 100) and percent != self._last_spoken_percent:
-                self._last_spoken_percent = percent
-                ui.message(_("Descargando Equalizer APO: {percent}%").format(percent=percent))
-        else:
-            mb_down = downloaded_bytes / (1024 * 1024)
-            self._gauge.Pulse()
-            self._lbl_status.SetLabel(f"Descargado: {mb_down:.1f} MB...")
+                # Anunciar por voz los hitos de descarga
+                if percent in (25, 50, 75, 100) and percent != self._last_spoken_percent:
+                    self._last_spoken_percent = percent
+                    ui.message(_("Descargando Equalizer APO: {percent}%").format(percent=percent))
+            else:
+                mb_down = downloaded_bytes / (1024 * 1024)
+                if hasattr(self, "_gauge") and self._gauge:
+                    self._gauge.Pulse()
+                if hasattr(self, "_lbl_status") and self._lbl_status:
+                    self._lbl_status.SetLabel(f"Descargado: {mb_down:.1f} MB...")
+        except Exception as e:
+            log.debug(f"AudioEqualizer: Error actualizando progreso de descarga: {e}")
 
     def _download_worker(self):
-        """Descarga el instalador en un hilo en segundo plano, verificando integridad mínima en bytes."""
+        """Descarga con 3 reintentos (backoff 2**attempt), timeout 15 y verificación de integridad."""
+        import time
         url = self._info["url"]
         headers = {"User-Agent": "Wget/1.20.3 (mingw32)"}
-        req = urllib.request.Request(url, headers=headers)
-
-        try:
-            ctx = ssl.create_default_context()
-            with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
-                try:
-                    total_bytes = int(resp.headers.get("Content-Length", 0) or 0)
-                except (ValueError, TypeError):
-                    total_bytes = 0
-                downloaded_bytes = 0
-                chunk_size = 64 * 1024
-
-                os.makedirs(os.path.dirname(self._tmp_path), exist_ok=True)
-                with open(self._tmp_path, "wb") as f:
-                    while True:
-                        if self._is_cancelled:
-                            return
-                        chunk = resp.read(chunk_size)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-                        downloaded_bytes += len(chunk)
-                        wx.CallAfter(self._update_progress, downloaded_bytes, total_bytes)
-
-                if self._is_cancelled:
-                    return
-
-                if downloaded_bytes < self._info.get("min_expected_bytes", 5000000):
-                    raise IOError(f"El archivo descargado está incompleto ({downloaded_bytes} bytes recibidos).")
-
-                if os.path.exists(self._target_path):
+        last_err = None
+        for attempt in range(3):
+            if self._is_cancelled:
+                return
+            req = urllib.request.Request(url, headers=headers)
+            try:
+                ctx = ssl.create_default_context()
+                with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
                     try:
-                        os.remove(self._target_path)
+                        with getattr(self, "_resp_lock", threading.Lock()):
+                            self._active_resp = resp
                     except Exception:
                         pass
-                os.replace(self._tmp_path, self._target_path)
+                    try:
+                        total_bytes = int(resp.headers.get("Content-Length", 0) or 0)
+                    except (ValueError, TypeError):
+                        total_bytes = 0
+                    downloaded_bytes = 0
+                    chunk_size = 64 * 1024
 
-                wx.CallAfter(self._close_with_result, True, None)
+                    os.makedirs(os.path.dirname(self._tmp_path), exist_ok=True)
+                    with open(self._tmp_path, "wb") as f:
+                        while True:
+                            if self._is_cancelled:
+                                try:
+                                    resp.close()
+                                except Exception:
+                                    pass
+                                return
+                            chunk = resp.read(chunk_size)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                            downloaded_bytes += len(chunk)
+                            try:
+                                wx.CallAfter(self._update_progress, downloaded_bytes, total_bytes)
+                            except Exception:
+                                pass
 
-        except Exception as e:
-            log.error(f"AudioEqualizer: Error durante la descarga: {e}", exc_info=True)
-            if not self._is_cancelled:
-                wx.CallAfter(self._close_with_result, False, str(e))
-        finally:
-            if self._is_cancelled or not os.path.exists(self._target_path):
+                    if self._is_cancelled:
+                        return
+
+                    if downloaded_bytes < self._info.get("min_expected_bytes", 5000000):
+                        raise IOError(f"El archivo descargado está incompleto ({downloaded_bytes} bytes recibidos).")
+
+                    if os.path.exists(self._target_path):
+                        try:
+                            os.remove(self._target_path)
+                        except Exception:
+                            pass
+                    os.replace(self._tmp_path, self._target_path)
+
+                    try:
+                        wx.CallAfter(self._close_with_result, True, None)
+                    except Exception:
+                        pass
+                    return
+            except Exception as e:
+                last_err = e
+                log.warning(f"AudioEqualizer: Intento {attempt + 1}/3 fallido: {e}")
+                if self._is_cancelled:
+                    return
+                if attempt < 2:
+                    try:
+                        time.sleep(2 ** attempt)
+                    except Exception:
+                        pass
+                    continue
+                log.error(f"AudioEqualizer: Error durante la descarga tras 3 intentos: {e}", exc_info=True)
+                if not self._is_cancelled:
+                    try:
+                        wx.CallAfter(self._close_with_result, False, str(e))
+                    except Exception:
+                        pass
+            finally:
                 try:
-                    if os.path.exists(self._tmp_path):
-                        os.remove(self._tmp_path)
+                    with getattr(self, "_resp_lock", threading.Lock()):
+                        self._active_resp = None
                 except Exception:
                     pass
+                if self._is_cancelled or not os.path.exists(self._target_path):
+                    try:
+                        if os.path.exists(self._tmp_path):
+                            os.remove(self._tmp_path)
+                    except Exception:
+                        pass
 
     def _close_with_result(self, success: bool, error_msg: str):
         """Destruye la ventana modal y llama al callback on_finished con el resultado de la descarga."""
         try:
+            if hasattr(self, "IsModal") and self.IsModal():
+                self.EndModal(wx.ID_OK if success else wx.ID_CANCEL)
+        except Exception:
+            pass
+        try:
             self.Destroy()
         except Exception:
             pass
-        if self._on_finished:
-            self._on_finished(success, error_msg, self._target_path)
+        on_finished = getattr(self, "_on_finished", None)
+        if on_finished:
+            try:
+                target_path = getattr(self, "_target_path", "")
+                on_finished(success, error_msg, target_path)
+            except Exception as e:
+                log.error(f"AudioEqualizer: Error en callback _on_finished: {e}", exc_info=True)
 
 
 def start_apo_download_flow(parent=None):
@@ -330,7 +492,8 @@ def start_apo_download_flow(parent=None):
     parent_win = parent or (nvda_gui.mainFrame if nvda_gui else None)
     
     # 1. Comprobar si ya existe en Descargas con tamaño válido
-    if os.path.exists(target_path) and os.path.getsize(target_path) >= info["min_expected_bytes"]:
+    _ok_exist, _ = verify_installer(target_path, info)
+    if _ok_exist:
         res = wx.MessageBox(
             _("El instalador oficial de Equalizer APO ({info_filename}) ya se encuentra en tu carpeta Descargas:\n\n{target_path}\n\n¿Deseas abrirlo ahora para realizar la instalación manual?").format(info_filename=info["filename"], target_path=target_path),
             "Instalador encontrado",
@@ -338,11 +501,7 @@ def start_apo_download_flow(parent=None):
             parent=parent_win
         )
         if res == wx.YES:
-            try:
-                os.startfile(target_path)
-                ui.message(_("Abriendo instalador de Equalizer APO. Sigue las instrucciones del asistente en pantalla."))
-            except Exception as e:
-                wx.MessageBox(_("No se pudo abrir el instalador: {e}").format(e=e), _("Error"), wx.OK | wx.ICON_ERROR, parent=parent_win)
+            _safe_launch_installer(target_path, info, parent_win)
             return
         
         # Preguntar si prefiere volver a descargarlo
@@ -389,6 +548,15 @@ def start_apo_download_flow(parent=None):
             return
         
         # 4. Preguntar si desea abrirlo cuando termine la descarga para instalarlo
+        ok_verify, reason = verify_installer(final_path, info)
+        if not ok_verify:
+            wx.MessageBox(
+                _("El instalador descargado no pasó la verificación ({reason}). Por favor, descárguelo de nuevo.").format(reason=reason),
+                _("Error de verificación"),
+                wx.OK | wx.ICON_ERROR,
+                parent=parent_win
+            )
+            return
         open_res = wx.MessageBox(
             _("Equalizer APO se ha descargado correctamente en tu carpeta Descargas:\n\n{final_path}\n\n¿Deseas abrir el instalador ahora para realizar la instalación manual?").format(final_path=final_path),
             _("Descarga completada"),
@@ -397,16 +565,7 @@ def start_apo_download_flow(parent=None):
         )
         
         if open_res == wx.YES:
-            try:
-                os.startfile(final_path)
-                ui.message(_("Abriendo el instalador de Equalizer APO. Sigue las instrucciones del asistente en pantalla."))
-            except Exception as e:
-                wx.MessageBox(
-                    _("No se pudo iniciar automáticamente el instalador:\n{e}\n\nPuedes abrirlo manualmente desde:\n{final_path}").format(e=e, final_path=final_path),
-                    _("Aviso"),
-                    wx.OK | wx.ICON_WARNING,
-                    parent=parent_win
-                )
+            _safe_launch_installer(final_path, info, parent_win)
         else:
             ui.message(_("El instalador de Equalizer APO está listo en tu carpeta Descargas para cuando desees instalarlo."))
 

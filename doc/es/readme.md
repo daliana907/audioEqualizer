@@ -1,7 +1,7 @@
 # Audio Equalizer
 
 * Autor: Daliana
-* Versión: 1.6.1
+* Versión: 1.6.4
 * Compatibilidad con NVDA: 2023.1 en adelante
 * Descarga de la versión estable: https://github.com/daliana907/audioEqualizer
 
@@ -22,6 +22,23 @@ Sus capacidades incluyen:
 *   Filtros de Accesibilidad y Fatiga: Funciones especiales como compresión de sonidos estridentes (Anti-Sibilancia), mitigación de ruidos eléctricos graves (Ground Hum) y reducción de frecuencias que causan cansancio tras muchas horas de escucha (Anti-Fatiga).
 *   Voz de NVDA: Cuenta con un filtro exclusivo que aísla y potencia las frecuencias centrales donde habita la voz de NVDA, permitiendo que el lector resalte por encima de la música o de juegos muy ruidosos sin tener que bajar su volumen de forma general.
 
+## Novedades en la versión 1.6.4
+
+*   Canales y sonido envolvente: lista de configuración de canales con niveles de central, subwoofer y traseros.
+*   Ancho estéreo con la sintaxis que entiende el motor de sonido.
+*   Perfiles con ancho en valor normal y registro honesto del estado real.
+
+## Novedades en la versión 1.6.3
+
+*   **Prevención de saltos de foco y auto-apertura del menú**: mnemónico único 'Ecualizador de &Audio' (tecla A) en el menú Herramientas, eliminando la colisión con la letra E y el despliegue automático involuntario al navegar con el teclado.
+*   **Corrección de lectura en nvda.ini**: resolución del fallo interno de desempaquetado de diccionario al leer AggregatedSection de NVDA en el arranque, garantizando la carga fidedigna del estado guardado.
+*   **Limpieza preventiva de submenús** al recargar complementos sin reiniciar NVDA.
+
+## Novedades en la versión 1.6.2
+
+*   **Estabilidad de menús**: corrección y blindaje del ciclo de vida del submenú en el menú Herramientas de NVDA, garantizando la desvinculación limpia de eventos y eliminación segura al reiniciar o recargar complementos.
+*   **Prevención de activaciones involuntarias**: texto de ayuda accesible y gestión precisa de identificadores para evitar saltos de foco o aperturas accidentales.
+
 ## Novedades en la versión 1.6.1
 
 *   **Persistencia indestructible**: Corrección definitiva del problema donde el ecualizador amanecía apagado o se cambiaba a perfil "sin personalizar" al reiniciar NVDA o el equipo.
@@ -41,13 +58,32 @@ Sus capacidades incluyen:
 
 ## Cómo usarlo
 
-El panel de control principal se abre mediante atajos de teclado o desde el menú de herramientas de NVDA. Dentro de este panel, podrás saltar entre pestañas para ajustar las bandas de frecuencia, activar los efectos especiales o probar el sonido de cada auricular por separado.
+El panel de control principal se abre mediante atajos de teclado o desde el menú de herramientas de NVDA. Dentro de este panel, podrás saltar entre secciones para ajustar las bandas de frecuencia, activar los efectos especiales o probar el sonido de cada auricular por separado.
+
+El complemento no asigna gestos por defecto para evitar conflictos; puedes asignar tus propios atajos en el menú NVDA > Preferencias > Gestos de entrada, categoría "Audio Equalizer".
 
 Además, cuenta con una lista de perfiles acústicos de fábrica y te permite guardar, nombrar y borrar los tuyos propios de forma ilimitada.
+
+## Canales y sonido envolvente
+
+La ventana incluye una lista de configuración de canales (estéreo, 5.1, 7.1, cuadrafónico y mezclas inteligentes a estéreo) con niveles de canal central, subwoofer y traseros. En equipos estéreo, los niveles de central y subwoofer actúan como realce de voces y de graves; el nivel de traseros necesita contenido multicanal. Las mezclas inteligentes actúan con películas o juegos con sonido multicanal.
 
 ## Requisito Obligatorio
 
 Para que el complemento surta efecto, es indispensable tener instalado en tu computadora el programa gratuito Equalizer APO. Una vez instalado, debes abrir su herramienta "Configurator" y marcar allí la tarjeta de sonido, los altavoces o auriculares que quieras ecualizar. Luego, reinicias tu equipo y el complemento se encargará de darle las instrucciones de sonido a ese programa por detrás.
+
+## Seguridad y recuperación
+
+*   Tus perfiles y el estado activo se validan antes de cargarse. Si un archivo de ajustes se daña, el complemento recupera valores seguros en lugar de impedir que NVDA arranque.
+*   Al modificar perfiles de fábrica, el complemento conserva una copia fechada de las modificaciones antes de sustituirlas.
+*   Órdenes de canales: el ancho estéreo, mono, inversión, 3D y radar se mandan al motor de sonido. En algunos auriculares USB pueden cortar el audio; si pasa, deja el ancho en 100.
+*   La descarga de Equalizer APO usa conexión segura, tiempo de espera, reintentos y comprobación del archivo descargado. Puedes cancelarla desde su ventana.
+*   Las opciones Radar y sonido 3D no se activan juntas, porque son efectos alternativos.
+*   Si Equalizer APO requiere permisos para actualizar su configuración, NVDA lo anuncia en vez de repetir el error en silencio.
+
+## Créditos de terceros
+
+*   Equalizer APO (https://sourceforge.net/projects/equalizerapo) por jthedering y colaboradores, bajo GNU GPLv2.
 
 ## Créditos
 

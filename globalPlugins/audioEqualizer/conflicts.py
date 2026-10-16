@@ -12,15 +12,49 @@ import gui
 import globalPluginHandler
 import logHandler
 
+import re
+
 try:
     _
 except NameError:
     _ = lambda s: s
 
 
+def _normalize_gesture(gesture_str):
+    """Normaliza un gesto para comparación preservando la variante de teclado.
+
+    Conserva la variante (desktop/laptop) entre paréntesis para no generar
+    falsos positivos, pero normaliza mayúsculas y espacios.
+    Devuelve (normalizado, variante).
+    """
+    raw = str(gesture_str).strip()
+    # Extraer variante como sufijo "(...)" si existe, preservándola.
+    import re as _re
+    m = _re.search(r'\(.*?\)\s*$', raw)
+    variant = m.group(0).lower().replace(" ", "") if m else ""
+    core_part = _re.sub(r'\(.*?\)\s*$', '', raw).lower().strip().replace(" ", "")
+    # Normalizar separadores pero conservar variante por separado.
+    norm = core_part
+    if variant:
+        norm = f"{core_part}{variant}"
+    return norm
+
+
+def _gesture_key(gesture_str):
+    """Clave de comparación que ignora variante solo si ambas carecen de ella."""
+    return _normalize_gesture(gesture_str)
+
+
 def format_gesture_name(gesture_str):
     """Convierte un identificador interno como 'kb:nvda+shift+e' en un texto amigable como 'NVDA + Shift + E'."""
-    s = str(gesture_str).lower().strip()
+    raw = str(gesture_str).strip()
+    # Preservar variante "(desktop)/(laptop)" para mostrarla sin perderla.
+    variant = ""
+    m = re.search(r'\(.*?\)\s*$', raw)
+    if m:
+        variant = m.group(0).strip()
+        raw = re.sub(r'\(.*?\)\s*$', '', raw).strip()
+    s = raw.lower().strip().replace(" ", "")
     if s.startswith("kb:"):
         s = s[3:]
     parts = s.split("+")
@@ -37,7 +71,10 @@ def format_gesture_name(gesture_str):
             res.append("Alt")
         else:
             res.append(p.upper())
-    return " + ".join(res)
+    base = " + ".join(res)
+    if variant:
+        base = f"{base} {variant}"
+    return base
 
 
 def audit_conflicts(plugin):
@@ -60,7 +97,7 @@ def audit_conflicts(plugin):
     our_gestures = {}
     g_map = getattr(plugin, "_gestureMap", {}) or {}
     for g_id, script_ref in g_map.items():
-        norm_g = str(g_id).strip().lower().replace(" ", "")
+        norm_g = _normalize_gesture(g_id)
         desc = (
             getattr(script_ref, "description", "")
             or getattr(script_ref, "__doc__", "")
@@ -74,7 +111,7 @@ def audit_conflicts(plugin):
     # 2. Comprobar otros complementos activos en ejecución
     try:
         running = getattr(globalPluginHandler, "runningPlugins", set())
-        for other in running:
+        for other in list(running):
             if other is plugin:
                 continue
 
@@ -96,7 +133,7 @@ def audit_conflicts(plugin):
                 other_map = getattr(other, "_ScriptableObject__gestures", {}) or {}
 
             for other_g, other_script in other_map.items():
-                norm_other = str(other_g).strip().lower().replace(" ", "")
+                norm_other = _normalize_gesture(other_g)
                 if norm_other in our_gestures:
                     _, our_desc = our_gestures[norm_other]
                     other_desc = (
@@ -121,7 +158,7 @@ def audit_conflicts(plugin):
         if cmd_obj:
             cmd_map = getattr(cmd_obj, "_gestureMap", {}) or {}
             for cmd_g, cmd_script in cmd_map.items():
-                norm_cmd = str(cmd_g).strip().lower().replace(" ", "")
+                norm_cmd = _normalize_gesture(cmd_g)
                 if norm_cmd in our_gestures:
                     _, our_desc = our_gestures[norm_cmd]
                     cmd_desc = (

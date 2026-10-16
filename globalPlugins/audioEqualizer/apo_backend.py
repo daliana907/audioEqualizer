@@ -14,6 +14,7 @@ garantizando una convivencia limpia, no destructiva y en tiempo real.
 
 import os
 import time
+import math
 from typing import List
 
 try:
@@ -24,6 +25,26 @@ except ImportError:
 
 from .backend import AudioBackend
 from . import constants
+
+
+# Compatibilidad: en algunos auriculares USB / controladores, cualquier directiva
+# Copy: de Equalizer APO detiene todo el audio hasta el siguiente cambio de
+# configuración. Si está en True no se emite ninguna directiva Copy:
+# ni ancho estéreo, ni mono, ni inversión, ni enrutados 3D/radar. El resto del
+# perfil (bandas, filtros, preamp, tonos) se aplica con normalidad.
+# En False las órdenes se mandan como antes (puede silenciar esos equipos).
+DISABLE_COPY_COMMANDS = False
+
+
+def _clean_float(val, default: float = 0.0, min_v: float = -30.0, max_v: float = 30.0) -> float:
+    """Valida, limpia y acota valores flotantes asegurando que no sean NaN ni Inf."""
+    try:
+        f = float(val)
+        if math.isnan(f) or math.isinf(f):
+            return default
+        return max(min_v, min(max_v, f))
+    except (TypeError, ValueError, OverflowError):
+        return default
 
 
 class ApoBackend(AudioBackend):
@@ -65,6 +86,11 @@ class ApoBackend(AudioBackend):
         self._surround_3d = False
         self._radar_mode = False
         self._stereo_width = constants.DEFAULT_STEREO_WIDTH
+        self._channel_mode = constants.DEFAULT_CHANNEL_MODE
+        self._center_gain = constants.DEFAULT_CENTER_GAIN
+        self._subwoofer_gain = constants.DEFAULT_SUBWOOFER_GAIN
+        self._surround_gain = constants.DEFAULT_SURROUND_GAIN
+        self._last_flushed_lines = None
 
     def _detect_and_init_paths(self) -> None:
         """Localiza de forma exhaustiva la carpeta de configuración de Equalizer APO."""
@@ -171,10 +197,21 @@ class ApoBackend(AudioBackend):
         surround_3d: bool = False,
         radar_mode: bool = False,
         stereo_width: int = 100,
+        channel_mode: str = "stereo",
+        center_gain: float = 0.0,
+        subwoofer_gain: float = 0.0,
+        surround_gain: float = 0.0,
     ) -> None:
         """Actualiza en bloque todos los ajustes acústicos y los escribe de inmediato en disco."""
         if len(gains) != constants.NUM_BANDS:
             raise ValueError(f"El backend esperaba {constants.NUM_BANDS} bandas, recibidas {len(gains)}.")
+        # Exclusión mutua radar/surround: no pueden sonar a la vez (doble crossfeed).
+        if bool(surround_3d) and bool(radar_mode):
+            radar_mode = False
+            try:
+                log.warning("AudioEqualizer: surround_3d y radar_mode mutuamente excluyentes; se desactiva radar_mode.")
+            except Exception:
+                pass
         self._enabled = enabled
         self._gains = list(gains)
         self._preamp = preamp
@@ -195,11 +232,18 @@ class ApoBackend(AudioBackend):
         self._surround_3d = bool(surround_3d)
         self._radar_mode = bool(radar_mode)
         self._stereo_width = int(stereo_width)
+        self._channel_mode = str(channel_mode) if str(channel_mode) in constants.CHANNEL_MODES else constants.DEFAULT_CHANNEL_MODE
+        self._center_gain = float(center_gain)
+        self._subwoofer_gain = float(subwoofer_gain)
+        self._surround_gain = float(surround_gain)
         self._flush_to_disk()
 
     def close(self) -> None:
         """Cierra el backend sin alterar los archivos de configuración."""
         log.debug("AudioEqualizer: Backend cerrado.")
+
+    _ADMIN_WARNED = False
+    _ROUTING_WARNED = False
 
     def _ensure_include_directive(self) -> None:
         """Asegura que config.txt de Equalizer APO contenga la directiva 'Include: nvda_equalizer.txt'.
@@ -220,8 +264,21 @@ class ApoBackend(AudioBackend):
             raise RuntimeError(err_msg)
 
         try:
-            with open(self._main_config, "r", encoding="utf-8-sig") as f:
-                content = f.read()
+            try:
+                if os.path.getsize(self._main_config) > 1024 * 1024:
+                    raise RuntimeError(f"config.txt supera el límite de 1 MB ({self._main_config}); se aborta lectura por seguridad.")
+            except OSError:
+                pass
+            try:
+                with open(self._main_config, "r", encoding="utf-8-sig", errors="replace") as f:
+                    content = f.read(1024 * 1024 + 1)
+                    if len(content) > 1024 * 1024:
+                        raise RuntimeError("config.txt supera el límite de 1 MB; se aborta lectura por seguridad.")
+            except UnicodeDecodeError:
+                with open(self._main_config, "r", encoding="mbcs", errors="replace") as f:
+                    content = f.read(1024 * 1024 + 1)
+                    if len(content) > 1024 * 1024:
+                        raise RuntimeError("config.txt supera el límite de 1 MB; se aborta lectura por seguridad.")
 
             # Buscamos la directiva línea por línea (ignorando espacios de sobra), en vez de
             # exigir que todo el archivo sea idéntico a lo que este complemento esperaría escribir.
@@ -240,10 +297,11 @@ class ApoBackend(AudioBackend):
             )
             temp_path = self._main_config + ".tmp"
             try:
-                with open(temp_path, "w", encoding="utf-8") as f:
+                with open(temp_path, "w", encoding="utf-8", errors="replace") as f:
                     f.write(new_content)
                 
                 last_err = None
+                admin_notified = False
                 for attempt in range(10):
                     try:
                         os.replace(temp_path, self._main_config)
@@ -251,16 +309,29 @@ class ApoBackend(AudioBackend):
                         break
                     except (PermissionError, OSError) as pe:
                         last_err = pe
+                        if isinstance(pe, PermissionError) and not ApoBackend._ADMIN_WARNED and not admin_notified:
+                            admin_notified = True
+                            ApoBackend._ADMIN_WARNED = True
+                            try:
+                                log.warning("AudioEqualizer: Sin permiso para escribir config.txt; ejecute NVDA como administrador una vez para autorizar.")
+                                try:
+                                    import ui
+                                    import core
+                                    core.callLater(0, ui.message, "Sin permiso para actualizar Equalizer APO. Ejecute NVDA como administrador una vez.")
+                                except Exception:
+                                    pass
+                            except Exception:
+                                pass
                         log.debug(f"AudioEqualizer: config.txt bloqueado en intento {attempt + 1}/10, reintentando...")
                         time.sleep(0.05)
                 else:
                     raise IOError(f"Archivo config.txt bloqueado tras 10 intentos: {last_err}")
             finally:
-                if os.path.exists(temp_path):
-                    try:
+                try:
+                    if temp_path and os.path.exists(temp_path):
                         os.remove(temp_path)
-                    except Exception:
-                        pass
+                except Exception:
+                    pass
                 
         except Exception as e:
             log.error(f"AudioEqualizer: Fallo al asegurar config.txt en APO: {e}", exc_info=True)
@@ -288,25 +359,94 @@ class ApoBackend(AudioBackend):
         if not self._enabled:
             lines.append("# Ecualizador desactivado")
         else:
+            # 0. Configuración de canales multicanal y mezcla envolvente
+            channel_mode = getattr(self, "_channel_mode", constants.DEFAULT_CHANNEL_MODE)
+            if channel_mode not in constants.CHANNEL_MODES:
+                channel_mode = constants.DEFAULT_CHANNEL_MODE
+
+            center_gain = _clean_float(getattr(self, "_center_gain", 0.0), default=0.0, min_v=-20.0, max_v=20.0)
+            sub_gain = _clean_float(getattr(self, "_subwoofer_gain", 0.0), default=0.0, min_v=-20.0, max_v=20.0)
+            sur_gain = _clean_float(getattr(self, "_surround_gain", 0.0), default=0.0, min_v=-20.0, max_v=20.0)
+
+            if not DISABLE_COPY_COMMANDS:
+                if channel_mode == constants.CHANNEL_MODE_DOWNMIX_5_1:
+                    lines.append("# Mezcla inteligente 5.1 a Estereo (Downmixing para auriculares)")
+                    c_fac = round(0.707 * (10.0 ** (center_gain / 20.0)), 3)
+                    sub_fac = round(0.500 * (10.0 ** (sub_gain / 20.0)), 3)
+                    sur_fac = round(0.707 * (10.0 ** (sur_gain / 20.0)), 3)
+                    lines.append(f"Copy: L=1.0*L+{c_fac}*C+{sur_fac}*RL+{sub_fac}*SUB R=1.0*R+{c_fac}*C+{sur_fac}*RR+{sub_fac}*SUB")
+                    lines.append("Channel: L R")
+                elif channel_mode == constants.CHANNEL_MODE_DOWNMIX_7_1:
+                    lines.append("# Mezcla inteligente 7.1 a Estereo (Downmixing para auriculares)")
+                    c_fac = round(0.707 * (10.0 ** (center_gain / 20.0)), 3)
+                    sub_fac = round(0.500 * (10.0 ** (sub_gain / 20.0)), 3)
+                    sur_fac = round(0.500 * (10.0 ** (sur_gain / 20.0)), 3)
+                    lines.append(f"Copy: L=1.0*L+{c_fac}*C+{sur_fac}*RL+{sur_fac}*SL+{sub_fac}*SUB R=1.0*R+{c_fac}*C+{sur_fac}*RR+{sur_fac}*SR+{sub_fac}*SUB")
+                    lines.append("Channel: L R")
+                elif channel_mode == constants.CHANNEL_MODE_QUAD:
+                    if abs(sur_gain) > 0.05:
+                        lines.append(f"# Nivel de canales traseros cuadrafonicos: {sur_gain:.1f} dB")
+                        lines.append("Channel: RL RR SL SR")
+                        lines.append(f"Preamp: {sur_gain:.1f} dB")
+                        lines.append("Channel: all")
+                elif channel_mode in (constants.CHANNEL_MODE_5_1, constants.CHANNEL_MODE_7_1):
+                    if abs(center_gain) > 0.05:
+                        lines.append(f"# Nivel canal Central / Voces: {center_gain:.1f} dB")
+                        lines.append("Channel: C")
+                        lines.append(f"Preamp: {center_gain:.1f} dB")
+                        lines.append("Channel: all")
+                    if abs(sub_gain) > 0.05:
+                        lines.append(f"# Nivel Subwoofer / Graves LFE: {sub_gain:.1f} dB")
+                        lines.append("Channel: SUB LFE")
+                        lines.append(f"Preamp: {sub_gain:.1f} dB")
+                        lines.append("Channel: all")
+                    if abs(sur_gain) > 0.05:
+                        lines.append(f"# Nivel canales envolventes Surround: {sur_gain:.1f} dB")
+                        lines.append("Channel: RL RR SL SR")
+                        lines.append(f"Preamp: {sur_gain:.1f} dB")
+                        lines.append("Channel: all")
+
+            if channel_mode == constants.CHANNEL_MODE_STEREO:
+                # En estéreo no hay central ni LFE discretos: aproximación honesta
+                # con ecualización (sin Copy), válida también en modo compatible.
+                if abs(center_gain) > 0.05:
+                    lines.append("# Voces (aproximación estéreo del canal central)")
+                    lines.append(f"Filter: ON PK Fc 2800 Hz Gain {center_gain:.1f} dB Q 1.4")
+                if abs(sub_gain) > 0.05:
+                    lines.append("# Graves LFE (aproximación estéreo del subwoofer)")
+                    lines.append(f"Filter: ON LS Fc 70 Hz Gain {sub_gain:.1f} dB Q 0.8")
+
             # 1. Enrutamiento de canales (Invertir canales, Mono, Ancho estéreo Mid/Side)
-            if self._swap_channels:
+            if self._swap_channels and not DISABLE_COPY_COMMANDS:
                 lines.append("Copy: L=R R=L")
 
-            if self._mono or self._stereo_width == 0:
+            stereo_width = _clean_float(self._stereo_width, default=100.0, min_v=0.0, max_v=300.0)
+            if DISABLE_COPY_COMMANDS and (self._swap_channels or self._mono or stereo_width != 100.0 or getattr(self, "_radar_mode", False) or getattr(self, "_surround_3d", False)):
+                if not ApoBackend._ROUTING_WARNED:
+                    ApoBackend._ROUTING_WARNED = True
+                    log.warning("AudioEqualizer: enrutado de canales omitido (modo compatible sin directivas Copy).")
+            if not DISABLE_COPY_COMMANDS and (self._mono or stereo_width == 0.0):
                 # Mezcla monoaural perfecta 50/50 en ambos auriculares
                 lines.append("Copy: L=0.5*L+0.5*R R=0.5*L+0.5*R")
-            elif self._stereo_width != 100:
+            elif not DISABLE_COPY_COMMANDS and stereo_width != 100.0:
                 # Matriz Mid/Side acústica: w=1.0 es estéreo normal, w>1.0 ensancha el campo auditivo
-                w = self._stereo_width / 100.0
+                w = stereo_width / 100.0
                 # Si ensancha mucho, compensamos subiendo levemente el canal central (mid_boost)
                 mid_boost = 1.0 + max(0.0, (w - 1.0) * 0.3)
                 cL = round(0.5 * (mid_boost + w), 3)
                 cR = round(0.5 * (mid_boost - w), 3)
-                lines.append(f"# Ancho estereo compensado ({self._stereo_width}%, mid_boost={round(mid_boost,2)})")
-                lines.append(f"Copy: L={cL}*L+{cR}*R R={cR}*L+{cL}*R")
+                lines.append(f"# Ancho estereo compensado ({round(stereo_width)}%, mid_boost={round(mid_boost,2)})")
+                # En Equalizer APO, la sustracción en directivas Copy: no admite el operador '-' infijo.
+                # Escribir L=cL*L-a*R hace que el analizador de APO lo interprete como valor escalar 1.0 (DC offset puro de 32767,
+                # silenciando por completo el audio). Se debe usar siempre el operador de suma '+' con el factor negativo '+-'.
+                if cR < 0:
+                    _copy_line = f"Copy: L={cL}*L+{cR}*R R={cL}*R+{cR}*L"
+                else:
+                    _copy_line = f"Copy: L={cL}*L+{cR}*R R={cR}*L+{cL}*R"
+                lines.append(_copy_line)
 
             # 1.4. Modo Radar (Precisión Posicional / HRTF simulado)
-            if getattr(self, "_radar_mode", False):
+            if getattr(self, "_radar_mode", False) and not DISABLE_COPY_COMMANDS:
                 lines.append("# Modo Radar Posicional (Crossfeed HRTF natural)")
                 lines.append("Copy: 3=L 4=R")
                 lines.append("Channel: 3 4")
@@ -324,39 +464,57 @@ class ApoBackend(AudioBackend):
                 lines.append("Filter: ON PK Fc 4000 Hz Gain 6.0 dB Q 1.0")
                 lines.append("Filter: ON HS Fc 8000 Hz Gain 3.0 dB")
 
-            # 1.5. Efecto 3D Espacial (Haas Crossfeed)
-            if getattr(self, "_surround_3d", False):
-                lines.append("# Sonido 3D Espacial (Haas)")
-                lines.append("Copy: 3=L 4=R")
-                lines.append("Channel: 3 4")
-                lines.append("Delay: 15 ms")
-                lines.append("Preamp: -6 dB")
-                lines.append("Filter: ON LP Fc 4000 Hz")
+            # 1.5. Audio 3D Espacial Inmersivo (HRTF Binaural Profesional)
+            if getattr(self, "_surround_3d", False) and not DISABLE_COPY_COMMANDS:
+                lines.append("# Audio 3D Espacial Inmersivo (HRTF Binaural Profesional)")
+                # 1. Extraer señal cruzada con retardo anatómico craneal (0.28 ms) y sombra acústica
+                lines.append("Copy: SL=L SR=R")
+                lines.append("Channel: SL SR")
+                lines.append("Delay: 0.28 ms")
+                lines.append("Filter: ON LP Fc 1400 Hz")
+                lines.append("Filter: ON HS Fc 2400 Hz Gain -7.0 dB")
+                lines.append("Preamp: -9.5 dB")
+                # 2. Generar canales laterales de profundidad mediante filtros Paso Todo (All-Pass)
+                lines.append("Copy: RL=0.5*L+-0.5*R RR=0.5*R+-0.5*L")
+                lines.append("Channel: RL RR")
+                lines.append("Filter: ON AP Fc 850 Hz Q 0.707")
+                lines.append("Filter: ON AP Fc 2200 Hz Q 0.707")
+                lines.append("Preamp: -6.0 dB")
+                # 3. Recomponer campo estéreo tridimensional proyectado fuera de la cabeza
                 lines.append("Channel: L R")
-                lines.append("Copy: L=L+0.5*4 R=R+0.5*3")
+                lines.append("Copy: L=0.75*L+RL+0.35*SR R=0.75*R+RR+0.35*SL")
+                # 4. Ecualización anatómica de concha y pabellón auditivo (externalización 3D)
+                lines.append("Filter: ON PK Fc 3200 Hz Gain 2.0 dB Q 1.5")
+                lines.append("Filter: ON PK Fc 7200 Hz Gain -2.5 dB Q 2.0")
+                # 5. Descompresión de cámara acústica para controladores de 53 mm (Redragon H510)
+                lines.append("Filter: ON PK Fc 320 Hz Gain -1.5 dB Q 1.2")
 
             # 2. Balance Estéreo (-100 a +100): exclusivamente por atenuación suave del canal opuesto
-            if self._balance < 0:
+            balance = _clean_float(self._balance, default=0.0, min_v=-100.0, max_v=100.0)
+            if balance < 0:
                 # Inclinado hacia la izquierda: atenuamos el canal derecho
-                att = round((self._balance / 100.0) * 20.0, 1)
+                att = round((balance / 100.0) * 20.0, 1)
                 lines.append("Channel: R")
                 lines.append(f"Preamp: {att:.1f} dB")
                 lines.append("Channel: all")
-            elif self._balance > 0:
+            elif balance > 0:
                 # Inclinado hacia la derecha: atenuamos el canal izquierdo
-                att = round((-self._balance / 100.0) * 20.0, 1)
+                att = round((-balance / 100.0) * 20.0, 1)
                 lines.append("Channel: L")
                 lines.append(f"Preamp: {att:.1f} dB")
                 lines.append("Channel: all")
 
             # 3. Preamplificación segura para control de volumen y anticlíping
-            lines.append(f"Preamp: {self._preamp:.1f} dB")
+            preamp = _clean_float(self._preamp, default=0.0, min_v=-30.0, max_v=20.0)
+            lines.append(f"Preamp: {preamp:.1f} dB")
 
             # 4. Controles rápidos de tono (filtros de estantería en 100 Hz y 8000 Hz)
-            if abs(self._tone_bass) > 0.05:
-                lines.append(f"Filter: ON LSC Fc 100 Hz Gain {self._tone_bass:.1f} dB")
-            if abs(self._tone_treble) > 0.05:
-                lines.append(f"Filter: ON HSC Fc 8000 Hz Gain {self._tone_treble:.1f} dB")
+            tone_bass = _clean_float(self._tone_bass, default=0.0, min_v=-20.0, max_v=20.0)
+            tone_treble = _clean_float(self._tone_treble, default=0.0, min_v=-20.0, max_v=20.0)
+            if abs(tone_bass) > 0.05:
+                lines.append(f"Filter: ON LSC Fc 100 Hz Gain {tone_bass:.1f} dB")
+            if abs(tone_treble) > 0.05:
+                lines.append(f"Filter: ON HSC Fc 8000 Hz Gain {tone_treble:.1f} dB")
 
             # 5. Mejoras acústicas para auriculares profesionales (filtros biquad nativos)
             if self._subsonic:
@@ -390,7 +548,8 @@ class ApoBackend(AudioBackend):
             # 6. Ecualizador gráfico de 31 bandas ISO estándar
             pairs = []
             for freq, gain in zip(constants.EQ_BANDS, self._gains):
-                pairs.append(f"{freq} {gain:.1f}")
+                clean_g = _clean_float(gain, default=0.0, min_v=-24.0, max_v=24.0)
+                pairs.append(f"{freq} {clean_g:.1f}")
             lines.append(f"GraphicEQ: {'; '.join(pairs)}")
         return lines
 
@@ -401,14 +560,13 @@ class ApoBackend(AudioBackend):
 
         self._ensure_include_directive()
         lines = self._build_config_lines()
-
+        tmp_path = self._addon_config_path + ".tmp"
         try:
             content = "\n".join(lines) + "\n"
             last_err = None
-            tmp_path = self._addon_config_path + ".tmp"
             for attempt in range(10):
                 try:
-                    with open(tmp_path, "w", encoding="utf-8") as f:
+                    with open(tmp_path, "w", encoding="utf-8", errors="replace") as f:
                         f.write(content)
                     os.replace(tmp_path, self._addon_config_path)
                     log.debug(f"AudioEqualizer: {self._addon_file_name} escrito exitosamente en intento {attempt + 1}.")
@@ -425,10 +583,25 @@ class ApoBackend(AudioBackend):
             else:
                 raise IOError(f"Archivo {self._addon_file_name} bloqueado por audiodg.exe u otro proceso tras 10 intentos: {last_err}")
             
-            # Forzar recarga en Equalizer APO
+            # Forzar recarga en Equalizer APO solo si hubo cambios estructurales.
+            # Si solo cambió GraphicEQ, APO ya detecta el cambio del include sin tocar config.txt.
             try:
-                os.utime(self._main_config, None)
-                log.debug("AudioEqualizer: Timestamp de config.txt actualizado para recarga en tiempo real.")
+                _prev = getattr(self, "_last_flushed_lines", None)
+                _only_gains = False
+                if _prev is not None and isinstance(_prev, list):
+                    if len(_prev) == len(lines):
+                        _diffs = [i for i, (a, b) in enumerate(zip(_prev, lines)) if a != b]
+                        if _diffs and all(l.startswith("GraphicEQ:") for l in (lines[i] for i in _diffs)):
+                            _only_gains = True
+                if not _only_gains:
+                    os.utime(self._main_config, None)
+                    log.debug("AudioEqualizer: Timestamp de config.txt actualizado para recarga en tiempo real.")
+                else:
+                    log.debug("AudioEqualizer: Solo cambiaron ganancias; se omite utime de config.txt.")
+                try:
+                    self._last_flushed_lines = list(lines)
+                except Exception:
+                    pass
             except Exception as utime_err:
                 log.debug(f"AudioEqualizer: No se pudo actualizar timestamp de config.txt ({utime_err}).")
 
@@ -455,6 +628,10 @@ class ApoBackend(AudioBackend):
                     surround_3d=self._surround_3d,
                     radar_mode=self._radar_mode,
                     stereo_width=self._stereo_width,
+                    channel_mode=self._channel_mode,
+                    center_gain=self._center_gain,
+                    subwoofer_gain=self._subwoofer_gain,
+                    surround_gain=self._surround_gain,
                     gains=self._gains,
                     lines_written=lines,
                     apo_config_path=self._addon_config_path,
@@ -478,3 +655,9 @@ class ApoBackend(AudioBackend):
             except Exception:
                 pass
             raise RuntimeError(f"Error de E/S guardando archivo para Equalizer APO: {e}")
+        finally:
+            try:
+                if tmp_path and os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception:
+                pass

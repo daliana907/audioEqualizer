@@ -24,12 +24,41 @@ def _get_log_file_path() -> str:
     """Devuelve la ruta del archivo de auditoría audioEqualizer.log dentro de la carpeta de configuración activa de NVDA."""
     try:
         import globalVars
-        return os.path.join(globalVars.appArgs.configPath, "audioEqualizer.log")
+        cfg = getattr(getattr(globalVars, "appArgs", None), "configPath", None)
+        if cfg:
+            return os.path.join(cfg, "audioEqualizer.log")
     except Exception:
+        pass
+    try:
         appdata = os.environ.get("APPDATA") or os.path.expanduser("~")
         return os.path.join(appdata, "nvda", "audioEqualizer.log")
+    except Exception:
+        return os.path.join(os.path.dirname(__file__), "audioEqualizer.log")
+
+
+def get_log_file_path() -> str:
+    """Resuelve dinámicamente la ruta del log en cada llamada (no cacheada en import)."""
+    try:
+        dynamic = _get_log_file_path()
+    except Exception:
+        dynamic = os.path.join(os.path.dirname(__file__), "audioEqualizer.log")
+    try:
+        cached = globals().get("LOG_FILE_PATH")
+        orig = globals().get("_ORIG_LOG_FILE_PATH")
+        if cached and cached != dynamic and cached != orig:
+            return cached
+        if cached != dynamic:
+            try:
+                globals()["LOG_FILE_PATH"] = dynamic
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return dynamic
+
 
 LOG_FILE_PATH = _get_log_file_path()
+_ORIG_LOG_FILE_PATH = LOG_FILE_PATH
 
 
 def write_audit_log(
@@ -52,6 +81,10 @@ def write_audit_log(
     surround_3d: bool = False,
     radar_mode: bool = False,
     stereo_width: int = 100,
+    channel_mode: str = "stereo",
+    center_gain: float = 0.0,
+    subwoofer_gain: float = 0.0,
+    surround_gain: float = 0.0,
     gains: List[float] = None,
     lines_written: List[str] = None,
     apo_config_path: str = "",
@@ -135,8 +168,15 @@ def write_audit_log(
 
 
         report_lines.append("\nMEJORAS ESPACIALES Y DE CANAL:")
+        try:
+            from .apo_backend import DISABLE_COPY_COMMANDS as _no_copy
+        except Exception:
+            _no_copy = False
         if stereo_width != 100:
-            report_lines.append(f"  * Ancho estéreo Mid/Side: [EFECTO REAL: APLICADO] -> {stereo_width}% (Procesamiento matricial)")
+            if _no_copy:
+                report_lines.append(f"  * Ancho estéreo Mid/Side: [DESACTIVADO EN MODO COMPATIBLE] -> {stereo_width}% (sin efecto en este equipo)")
+            else:
+                report_lines.append(f"  * Ancho estéreo Mid/Side: [EFECTO REAL: APLICADO] -> {stereo_width}% (Procesamiento matricial)")
         else:
             report_lines.append("  * Ancho estéreo Mid/Side: [100%: ESTÉREO ESTÁNDAR]")
 
@@ -145,26 +185,48 @@ def write_audit_log(
             loudness,
             "Filter: ON LS Fc 80 Hz Gain 4.5 dB + Filter: ON HS Fc 9000 Hz Gain 3.0 dB"
         ))
-        report_lines.append(_check(
-            "Forzado de audio mono",
-            mono,
-            "Copy: L=0.5*L+0.5*R R=0.5*L+0.5*R"
-        ))
-        report_lines.append(_check(
-            "Invertir canales estéreo (L/R)",
-            swap_channels,
-            "Copy: L=R R=L"
-        ))
-        report_lines.append(_check(
-            "Efecto 3D Espacial (Haas)",
-            surround_3d,
-            "Delay: 15 ms + Preamp: -6 dB + Filter: LP Fc 4000 Hz"
-        ))
-        report_lines.append(_check(
-            "Modo Radar Posicional (HRTF crossfeed)",
-            radar_mode,
-            "Delay: 0.35 ms + LP Fc 1500 Hz + EQ 4 kHz"
-        ))
+        if _no_copy and mono:
+            report_lines.append("  * Forzado de audio mono: [DESACTIVADO EN MODO COMPATIBLE]")
+        else:
+            report_lines.append(_check(
+                "Forzado de audio mono",
+                mono,
+                "Copy: L=0.5*L+0.5*R R=0.5*L+0.5*R"
+            ))
+        if _no_copy and swap_channels:
+            report_lines.append("  * Invertir canales estéreo (L/R): [DESACTIVADO EN MODO COMPATIBLE]")
+        else:
+            report_lines.append(_check(
+                "Invertir canales estéreo (L/R)",
+                swap_channels,
+                "Copy: L=R R=L"
+            ))
+        if _no_copy and surround_3d:
+            report_lines.append("  * Efecto 3D Espacial (Haas): [DESACTIVADO EN MODO COMPATIBLE]")
+        else:
+            report_lines.append(_check(
+                "Efecto 3D Espacial (Haas)",
+                surround_3d,
+                "Delay: 15 ms + Preamp: -6 dB + Filter: LP Fc 4000 Hz"
+            ))
+        if _no_copy and radar_mode:
+            report_lines.append("  * Modo Radar Posicional (HRTF crossfeed): [DESACTIVADO EN MODO COMPATIBLE]")
+        else:
+            report_lines.append(_check(
+                "Modo Radar Posicional (HRTF crossfeed)",
+                radar_mode,
+                "Delay: 0.35 ms + LP Fc 1500 Hz + EQ 4 kHz"
+            ))
+        try:
+            from . import constants as _consts
+            _es_estereo = (channel_mode == _consts.CHANNEL_MODE_STEREO)
+        except Exception:
+            _es_estereo = (channel_mode == "stereo")
+        if _es_estereo:
+            if abs(center_gain) > 0.05:
+                report_lines.append(f"  * Voces (aprox. estéreo de central): [EFECTO REAL: APLICADO] -> Filter: ON PK Fc 2800 Hz Gain {center_gain:.1f} dB")
+            if abs(subwoofer_gain) > 0.05:
+                report_lines.append(f"  * Graves LFE (aprox. estéreo de subwoofer): [EFECTO REAL: APLICADO] -> Filter: ON LS Fc 70 Hz Gain {subwoofer_gain:.1f} dB")
 
         if balance != 0:
             canal = "derecho" if balance < 0 else "izquierdo"
@@ -194,9 +256,18 @@ def write_audit_log(
     report_lines.append(f"  * Vinculación en config.txt: {'CORRECTA (Include activo)' if apo_include_ok else 'FALLO: No se encontró el include'}")
     report_lines.append(sep + "\n")
 
+    _log_path = get_log_file_path()
     try:
-        os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
-        with open(LOG_FILE_PATH, "w", encoding="utf-8") as f:
+        os.makedirs(os.path.dirname(_log_path) or ".", exist_ok=True)
+        if os.path.exists(_log_path) and os.path.getsize(_log_path) > 1024 * 1024:
+            try:
+                old_log = _log_path + ".old"
+                if os.path.exists(old_log):
+                    os.remove(old_log)
+                os.rename(_log_path, old_log)
+            except Exception:
+                pass
+        with open(_log_path, "a", encoding="utf-8", errors="replace") as f:
             f.write("\n".join(report_lines) + "\n")
     except Exception:
         log.error("AudioEqualizer: Error al escribir en el registro de auditoría.", exc_info=True)
@@ -240,20 +311,21 @@ def log_error(
     log.error(f"{component}: {error_msg} | Detalle: {exc}\n{tb_str if tb_str else ''}")
 
     # Registrar de forma persistente en audioEqualizer.log
+    _log_path2 = get_log_file_path()
     try:
-        os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
-        if os.path.exists(LOG_FILE_PATH) and os.path.getsize(LOG_FILE_PATH) > 1024 * 1024:
+        os.makedirs(os.path.dirname(_log_path2) or ".", exist_ok=True)
+        if os.path.exists(_log_path2) and os.path.getsize(_log_path2) > 1024 * 1024:
             try:
-                old_log = LOG_FILE_PATH + ".old"
+                old_log = _log_path2 + ".old"
                 if os.path.exists(old_log):
                     os.remove(old_log)
-                os.rename(LOG_FILE_PATH, old_log)
+                os.rename(_log_path2, old_log)
             except Exception:
                 pass
-        with open(LOG_FILE_PATH, "a", encoding="utf-8") as f:
+        with open(_log_path2, "a", encoding="utf-8", errors="replace") as f:
             f.write("\n".join(err_lines) + "\n")
     except Exception as io_err:
-        log.error(f"AudioEqualizer: No se pudo escribir error en {LOG_FILE_PATH}: {io_err}", exc_info=True)
+        log.error(f"AudioEqualizer: No se pudo escribir error en {_log_path2}: {io_err}", exc_info=True)
 
 
 def get_voice_summary(profile: Any, profile_name: str = "") -> str:
@@ -279,18 +351,47 @@ def get_voice_summary(profile: Any, profile_name: str = "") -> str:
         active.append("Filtro anti-zumbido 50/60 Hz")
     if getattr(profile, 'loudness', False):
         active.append("Loudness isofónico")
-    if getattr(profile, 'mono', False):
-        active.append("Modo Mono")
-    elif getattr(profile, 'stereo_width', 100) != 100:
-        active.append(f"Ancho estéreo {profile.stereo_width}%")
-    if getattr(profile, 'swap_channels', False):
-        active.append("Canales invertidos")
+    try:
+        from .apo_backend import DISABLE_COPY_COMMANDS as _no_copy_voz
+    except Exception:
+        _no_copy_voz = False
+    if not _no_copy_voz:
+        if getattr(profile, 'mono', False):
+            active.append("Modo Mono")
+        elif getattr(profile, 'stereo_width', 100) != 100:
+            active.append(f"Ancho estéreo {profile.stereo_width}%")
+        if getattr(profile, 'swap_channels', False):
+            active.append("Canales invertidos")
     if getattr(profile, 'balance', 0) != 0:
         active.append(f"Balance {profile.balance}%")
     if abs(getattr(profile, 'tone_bass', 0.0)) > 0.05:
         active.append(f"Graves {profile.tone_bass:.1f} dB")
     if abs(getattr(profile, 'tone_treble', 0.0)) > 0.05:
         active.append(f"Agudos {profile.tone_treble:.1f} dB")
+    try:
+        from . import constants as _c2
+        _st2 = (getattr(profile, 'channel_mode', 'stereo') == _c2.CHANNEL_MODE_STEREO)
+    except Exception:
+        _st2 = True
+    if _st2:
+        try:
+            if abs(float(getattr(profile, 'center_gain', 0.0))) > 0.05:
+                active.append(f"Voces {float(getattr(profile, 'center_gain', 0.0)):+.1f} dB")
+            if abs(float(getattr(profile, 'subwoofer_gain', 0.0))) > 0.05:
+                active.append(f"Graves LFE {float(getattr(profile, 'subwoofer_gain', 0.0)):+.1f} dB")
+        except Exception:
+            pass
+    chan_m = getattr(profile, 'channel_mode', 'stereo')
+    if chan_m == '5.1':
+        active.append("Modo 5.1 envolvente")
+    elif chan_m == '7.1':
+        active.append("Modo 7.1 envolvente")
+    elif chan_m == 'quad':
+        active.append("Modo Cuadrafónico")
+    elif chan_m == 'downmix_5_1':
+        active.append("Mezcla 5.1 a estéreo")
+    elif chan_m == 'downmix_7_1':
+        active.append("Mezcla 7.1 a estéreo")
 
     header_parts = ["Ecualizador activo"]
     if profile_name:
@@ -308,10 +409,29 @@ def get_voice_summary(profile: Any, profile_name: str = "") -> str:
 
 def open_log_file() -> None:
     """Abre el archivo de registro en el Bloc de notas o editor predeterminado."""
-    if not os.path.isfile(LOG_FILE_PATH):
-        with open(LOG_FILE_PATH, "w", encoding="utf-8") as f:
-            f.write("# Registro de filtros y auditoría acústica de Audio Equalizer\n\nNo se han registrado cambios aún.\n")
+    _p = get_log_file_path()
     try:
-        os.startfile(LOG_FILE_PATH)
+        os.makedirs(os.path.dirname(_p) or ".", exist_ok=True)
     except Exception:
-        log.error("AudioEqualizer: No se pudo abrir el archivo de log.", exc_info=True)
+        pass
+    if not os.path.isfile(_p):
+        try:
+            with open(_p, "w", encoding="utf-8", errors="replace") as f:
+                f.write("# Registro de filtros y auditoría acústica de Audio Equalizer\n\nNo se han registrado cambios aún.\n")
+        except Exception as e:
+            log.error(f"AudioEqualizer: No se pudo crear el archivo de log: {e}", exc_info=True)
+            try:
+                import ui
+                ui.message("No se pudo crear el archivo de registro.")
+            except Exception:
+                pass
+            return
+    try:
+        os.startfile(_p)
+    except Exception as e:
+        log.error(f"AudioEqualizer: No se pudo abrir el archivo de log: {e}", exc_info=True)
+        try:
+            import ui
+            ui.message("No se pudo abrir el archivo de registro.")
+        except Exception:
+            pass

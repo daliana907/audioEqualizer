@@ -413,6 +413,46 @@ class RegresionesV160(unittest.TestCase):
             self.assertTrue(os.path.isabs(path))
             self.assertTrue(path.endswith("audioEqualizer_factory_overrides.json"))
 
+    def test_surround_3d_usa_binaural_hrtf_sin_filtro_en_peine(self):
+        """Verifica que surround_3d use HRTF anatómico (0.28ms, all-pass, concha) y NUNCA el delay robótico de 15ms."""
+        from audioEqualizer.apo_backend import ApoBackend
+        backend = ApoBackend()
+        backend.update(
+            enabled=True,
+            gains=[0.0] * 31,
+            preamp=0.0,
+            surround_3d=True
+        )
+        content = "\n".join(backend._build_config_lines())
+        # No debe tener el antiguo retardo de 15 ms que generaba filtrado en peine robótico
+        self.assertNotIn("Delay: 15 ms", content)
+        # Debe contener los parámetros del modelo HRTF binaural profesional
+        self.assertIn("Delay: 0.28 ms", content)
+        self.assertIn("Filter: ON AP Fc 850 Hz", content)
+        self.assertIn("Filter: ON PK Fc 3200 Hz", content)
+        self.assertIn("Filter: ON PK Fc 320 Hz", content)
+
+    def test_perfil_juegos_calibracion_esports_y_3d_hrtf(self):
+        """Verifica que el perfil de Juegos tenga calibración profesional de e-sports y active el motor 3D HRTF."""
+        from audioEqualizer import profiles
+        gaming_prof = profiles.PREDEFINED_PROFILES[4]
+        self.assertIn("Juegos", gaming_prof["name"])
+        # Debe vincularse directamente al nuevo motor 3D
+        self.assertTrue(gaming_prof.get("surround_3d", False))
+        # No debe activar radar_mode para evitar desfases o doble crossfeed
+        self.assertFalse(gaming_prof.get("radar_mode", False))
+        # Subgraves con impacto y peso táctil (visceral sin saturar)
+        self.assertGreaterEqual(gaming_prof["gains"][2], 1.5)  # 31 Hz
+        self.assertGreaterEqual(gaming_prof["gains"][3], 1.5)  # 40 Hz
+        # Zona de resonancia y barro limpia (caja acústica 160-200 Hz)
+        self.assertLess(gaming_prof["gains"][9], 0.0)   # 160 Hz
+        self.assertLess(gaming_prof["gains"][10], 0.0)  # 200 Hz
+        # Banda de pasos y recargas (1.25 kHz a 3.15 kHz) nítida y controlada
+        self.assertGreaterEqual(gaming_prof["gains"][20], 2.0)  # 2 kHz
+        self.assertGreaterEqual(gaming_prof["gains"][21], 2.0)  # 2.5 kHz
+        # Filtro subsónico activo para cuidar los transductores de 53 mm
+        self.assertTrue(gaming_prof.get("subsonic", False))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -4,13 +4,14 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: audioEqualizer 1.2.0\n"
+"Project-Id-Version: audioEqualizer 1.6.3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-12 19:15-0300\n"
-"PO-Revision-Date: 2026-09-12 19:15-0300\n"
+"PO-Revision-Date: 2026-10-16 12:00+0000\n"
 "Last-Translator: Daliana\n"
 "Language-Team: en\n"
 "Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -114,7 +115,7 @@ msgstr "Decreases quick bass by 1 dB."
 msgid "Ecualizador de Audio"
 msgstr "Audio Equalizer"
 
-msgid "Ecualizador de &Audio"
+msgid "&Ecualizador de Audio"
 msgstr "&Audio Equalizer"
 
 msgid "Ecualizador de audio"
@@ -160,4 +161,13 @@ msgstr "Tip: You can customize any of these shortcuts in NVDA menu > Preferences
 
 msgid "Ver registro de filtros (Log)..."
 msgstr "View filter log..."
+
+msgid "Activa o desactiva el audio 3D inmersivo (Binaural HRTF profesional)."
+msgstr "Toggles professional immersive 3D binaural HRTF audio."
+
+msgid "Audio &3D Inmersivo (Binaural HRTF profesional)"
+msgstr "Immersive &3D Audio (Professional Binaural HRTF)"
+
+msgid "Audio 3D inmersivo"
+msgstr "Immersive 3D audio"
 

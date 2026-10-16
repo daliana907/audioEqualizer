@@ -48,7 +48,7 @@ PREDEFINED_PROFILES = [
         "subsonic": True,
         "nvda_voice": False,
         "loudness": False,
-        "stereo_width": 105,
+        "stereo_width": 100,
     },
     {
         "name": "Estudio de grabación (Analítico)",
@@ -86,19 +86,19 @@ PREDEFINED_PROFILES = [
         "subsonic": True,
         "nvda_voice": False,
         "loudness": False,
-        "stereo_width": 125,
+        "stereo_width": 100,
     },
     {
         "name": "Juegos (Pasos y detalles)",
         "gains": [
-            -3.0, -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 1.5, 2.0, 2.8,
-            3.5, 4.0, 4.5, 4.0, 3.0, 2.5, 2.0, 1.5, 1.0, 0.5, 0.0
+            1.0, 1.5, 2.0, 2.0, 1.5, 1.0, 0.0, -0.5, -1.0, -1.5,
+            -1.5, -1.0, -0.5, 0.0, 0.0, 0.0, 0.5, 1.0, 1.5, 2.0,
+            2.5, 2.5, 2.0, 1.5, 1.0, 1.0, 0.5, 0.5, 0.0, 0.0, 0.0
         ],
-        "tone_bass": -2.0,
-        "tone_treble": 2.0,
+        "tone_bass": 0.0,
+        "tone_treble": 0.0,
         "sub_bass": False,
-        "clarity": True,
+        "clarity": False,
         "anti_sibilance": False,
         "anti_fatigue": False,
         "ground_hum": False,
@@ -106,7 +106,8 @@ PREDEFINED_PROFILES = [
         "nvda_voice": False,
         "loudness": False,
         "stereo_width": 100,
-        "radar_mode": True,
+        "surround_3d": True,
+        "radar_mode": False,
     },
     {
         "name": "Voz y podcasts (Máxima claridad)",
@@ -144,7 +145,7 @@ PREDEFINED_PROFILES = [
         "subsonic": True,
         "nvda_voice": False,
         "loudness": False,
-        "stereo_width": 105,
+        "stereo_width": 100,
     },
     {
         "name": "Pop y acústico (Voz suave y brillo)",
@@ -163,7 +164,7 @@ PREDEFINED_PROFILES = [
         "subsonic": True,
         "nvda_voice": False,
         "loudness": False,
-        "stereo_width": 105,
+        "stereo_width": 100,
     },
     {
         "name": "Música electrónica (Sub-Bass potente)",
@@ -182,7 +183,7 @@ PREDEFINED_PROFILES = [
         "subsonic": True,
         "nvda_voice": False,
         "loudness": False,
-        "stereo_width": 110,
+        "stereo_width": 100,
     },
     {
         "name": "Música clásica (Acústica orquestal)",
@@ -307,3 +308,7 @@ PROFILE_NAMES = [p["name"] for p in PREDEFINED_PROFILES]
 
 # Índice especial reservado para el perfil 'Personalizado' (inmediatamente después de los predefinidos)
 CUSTOM_INDEX = len(PREDEFINED_PROFILES)
+
+import copy
+# Copia inmutable de referencia con los perfiles originales de fábrica
+ORIGINAL_PREDEFINED_PROFILES = copy.deepcopy(PREDEFINED_PROFILES)

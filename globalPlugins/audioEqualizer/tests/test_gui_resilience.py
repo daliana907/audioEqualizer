@@ -10,9 +10,17 @@ import os
 import types
 
 # Ensure required mock modules
-for mod in ["wx", "gui", "globalPluginHandler", "logHandler", "globalCommands", "ui"]:
+for mod in ["wx", "gui", "globalPluginHandler", "scriptHandler", "addonHandler", "config", "logHandler", "globalCommands", "ui"]:
     if mod not in sys.modules:
         sys.modules[mod] = types.ModuleType(mod)
+if not hasattr(sys.modules["globalPluginHandler"], "GlobalPlugin"):
+    sys.modules["globalPluginHandler"].GlobalPlugin = object
+if not hasattr(sys.modules["scriptHandler"], "script"):
+    sys.modules["scriptHandler"].script = lambda *a, **k: (lambda f: f)
+if not hasattr(sys.modules["addonHandler"], "initTranslation"):
+    sys.modules["addonHandler"].initTranslation = lambda: None
+if not hasattr(sys.modules["config"], "conf"):
+    sys.modules["config"].conf = {"audioEqualizer": {}}
 
 import wx
 if not hasattr(wx, "CallAfter"):
@@ -138,6 +146,17 @@ class TestGuiResilience(unittest.TestCase):
             self.assertIsNone(self.controller._dialog_instance)
             mock_post_popup.assert_called_once()
             dlg.Destroy.assert_called_once()
+
+    def test_dialog_cleanup_handles_dead_object_error(self):
+        """Verifica que _cleanup no lance excepciones si Destroy produce DeadObjectError/RuntimeError."""
+        dlg = EqualizerDialog.__new__(EqualizerDialog)
+        dlg._controller = self.controller
+        dlg._cleaned_up = False
+        dlg.Destroy = MagicMock(side_effect=RuntimeError("wrapped C/C++ object has been deleted"))
+        try:
+            dlg._cleanup()
+        except Exception as e:
+            self.fail(f"_cleanup lanzó excepción ante objeto C++ destruido: {e}")
 
     def test_apo_backend_is_available_detection(self):
         apo = ApoBackend()

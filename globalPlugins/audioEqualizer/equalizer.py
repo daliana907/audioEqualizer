@@ -24,6 +24,7 @@ except ImportError:
     import logging
     log = logging.getLogger("audioEqualizer")
 
+import math
 import ui
 import wx
 import gui as nvda_gui
@@ -89,15 +90,36 @@ class EqualizerController:
             effective_preamp = profile.preamp
             if profile.auto_preamp:
                 # Recolectamos ganancias acústicas sumando filtros concurrentes para evitar saturación digital
-                bass_band = max(0.0, profile.gains[7] if len(profile.gains) > 7 else 0.0)
-                bass_boost = max(0.0, profile.tone_bass) + bass_band
+                import math
+                safe_gains = []
+                for g in (profile.gains or []):
+                    try:
+                        fg = float(g)
+                        safe_gains.append(0.0 if math.isnan(fg) or math.isinf(fg) else fg)
+                    except (ValueError, TypeError):
+                        safe_gains.append(0.0)
+
+                try:
+                    tb_f = float(profile.tone_bass)
+                    tb = 0.0 if (math.isnan(tb_f) or math.isinf(tb_f)) else tb_f
+                except (ValueError, TypeError, OverflowError):
+                    tb = 0.0
+
+                try:
+                    tt_f = float(profile.tone_treble)
+                    tt = 0.0 if (math.isnan(tt_f) or math.isinf(tt_f)) else tt_f
+                except (ValueError, TypeError, OverflowError):
+                    tt = 0.0
+
+                bass_band = max(0.0, safe_gains[7] if len(safe_gains) > 7 else 0.0)
+                bass_boost = max(0.0, tb) + bass_band
                 if profile.sub_bass:
                     bass_boost += 6.0
                 if profile.loudness:
                     bass_boost += 4.5
 
-                treble_band = max(0.0, profile.gains[25] if len(profile.gains) > 25 else 0.0)
-                treble_boost = max(0.0, profile.tone_treble) + treble_band
+                treble_band = max(0.0, safe_gains[25] if len(safe_gains) > 25 else 0.0)
+                treble_boost = max(0.0, tt) + treble_band
                 if profile.clarity:
                     treble_boost += 5.5
                 if profile.loudness:
@@ -105,16 +127,27 @@ class EqualizerController:
 
                 stereo_gain = 0.0
                 if profile.stereo_width > 100:
-                    import math
                     w = profile.stereo_width / 100.0
                     stereo_gain = round(20.0 * math.log10(max(1e-6, 0.5 * (1.0 + w))), 2)
 
-                isolated_boosts = [0.0] + profile.gains + [max(0.0, profile.tone_bass), max(0.0, profile.tone_treble)]
+                isolated_boosts = [0.0] + safe_gains + [max(0.0, tb), max(0.0, tt)]
                 if profile.nvda_voice:
                     isolated_boosts.append(4.5)
+                if getattr(profile, "surround_3d", False):
+                    isolated_boosts.append(2.0)
+                chan_mode = getattr(profile, "channel_mode", constants.DEFAULT_CHANNEL_MODE)
+                c_gain = getattr(profile, "center_gain", constants.DEFAULT_CENTER_GAIN)
+                sub_gain = getattr(profile, "subwoofer_gain", constants.DEFAULT_SUBWOOFER_GAIN)
+                sur_gain = getattr(profile, "surround_gain", constants.DEFAULT_SURROUND_GAIN)
+                if chan_mode in (constants.CHANNEL_MODE_DOWNMIX_5_1, constants.CHANNEL_MODE_DOWNMIX_7_1):
+                    isolated_boosts.append(3.0 + max(0.0, c_gain))
+                elif chan_mode in (constants.CHANNEL_MODE_5_1, constants.CHANNEL_MODE_7_1, constants.CHANNEL_MODE_QUAD):
+                    isolated_boosts.extend([max(0.0, c_gain), max(0.0, sub_gain), max(0.0, sur_gain)])
 
                 peak_gain = max(max(isolated_boosts), bass_boost, treble_boost) + stereo_gain
-                effective_preamp = -round(peak_gain, 1)
+                if math.isnan(peak_gain) or math.isinf(peak_gain):
+                    peak_gain = 0.0
+                effective_preamp = max(-20.0, min(0.0, -round(peak_gain, 1)))
                 
             self._backend.update(
                 enabled=profile.enabled,
@@ -137,6 +170,10 @@ class EqualizerController:
                 surround_3d=getattr(profile, "surround_3d", False),
                 radar_mode=getattr(profile, "radar_mode", False),
                 stereo_width=profile.stereo_width,
+                channel_mode=getattr(profile, "channel_mode", constants.DEFAULT_CHANNEL_MODE),
+                center_gain=getattr(profile, "center_gain", constants.DEFAULT_CENTER_GAIN),
+                subwoofer_gain=getattr(profile, "subwoofer_gain", constants.DEFAULT_SUBWOOFER_GAIN),
+                surround_gain=getattr(profile, "surround_gain", constants.DEFAULT_SURROUND_GAIN),
             )
             return True
         except ValueError as ve:
@@ -199,9 +236,15 @@ class EqualizerController:
         uno de los conmutadores de filtros especializados (subgraves, claridad vocal,
         anti-sibilancia, ancho estéreo, etc.).
         """
-        target_profile.gains = list(preset_data["gains"])
-        if "preamp" in preset_data:
-            target_profile.preamp = float(preset_data["preamp"])
+        raw_gains = preset_data.get("gains") if isinstance(preset_data, dict) else None
+        target_profile.gains = config._parse_gains(raw_gains)
+        if isinstance(preset_data, dict) and "preamp" in preset_data:
+            try:
+                val_preamp = float(preset_data["preamp"])
+                import math
+                target_profile.preamp = 0.0 if (math.isnan(val_preamp) or math.isinf(val_preamp)) else max(constants.MIN_PREAMP, min(constants.MAX_PREAMP, val_preamp))
+            except (ValueError, TypeError, OverflowError):
+                target_profile.preamp = 0.0
             target_profile.auto_preamp = bool(preset_data.get("auto_preamp", False))
         else:
             # Ninguno de los perfiles de fábrica trae su propio valor de preamp seguro.
@@ -209,19 +252,33 @@ class EqualizerController:
             # un perfil con bandas graves o agudas muy realzadas (p. ej. "Más graves")
             # podía saturar el sonido en vez de sonar simplemente "con más grave".
             target_profile.auto_preamp = True
-        target_profile.tone_bass = float(preset_data.get("tone_bass", 0.0))
-        target_profile.tone_treble = float(preset_data.get("tone_treble", 0.0))
-        target_profile.sub_bass = bool(preset_data.get("sub_bass", False))
-        target_profile.clarity = bool(preset_data.get("clarity", False))
-        target_profile.anti_sibilance = bool(preset_data.get("anti_sibilance", False))
-        target_profile.anti_fatigue = bool(preset_data.get("anti_fatigue", False))
-        target_profile.ground_hum = bool(preset_data.get("ground_hum", False))
-        target_profile.subsonic = bool(preset_data.get("subsonic", False))
-        target_profile.nvda_voice = bool(preset_data.get("nvda_voice", False))
-        target_profile.loudness = bool(preset_data.get("loudness", False))
-        target_profile.stereo_width = int(preset_data.get("stereo_width", 100))
-        target_profile.surround_3d = bool(preset_data.get("surround_3d", False))
-        target_profile.radar_mode = bool(preset_data.get("radar_mode", False))
+        try:
+            val_tb = float(preset_data.get("tone_bass", 0.0))
+            import math
+            target_profile.tone_bass = 0.0 if (math.isnan(val_tb) or math.isinf(val_tb)) else val_tb
+        except (ValueError, TypeError, OverflowError, AttributeError):
+            target_profile.tone_bass = 0.0
+        try:
+            val_tt = float(preset_data.get("tone_treble", 0.0))
+            import math
+            target_profile.tone_treble = 0.0 if (math.isnan(val_tt) or math.isinf(val_tt)) else val_tt
+        except (ValueError, TypeError, OverflowError, AttributeError):
+            target_profile.tone_treble = 0.0
+        pdata = preset_data if isinstance(preset_data, dict) else {}
+        target_profile.sub_bass = bool(pdata.get("sub_bass", False))
+        target_profile.clarity = bool(pdata.get("clarity", False))
+        target_profile.anti_sibilance = bool(pdata.get("anti_sibilance", False))
+        target_profile.anti_fatigue = bool(pdata.get("anti_fatigue", False))
+        target_profile.ground_hum = bool(pdata.get("ground_hum", False))
+        target_profile.subsonic = bool(pdata.get("subsonic", False))
+        target_profile.nvda_voice = bool(pdata.get("nvda_voice", False))
+        target_profile.loudness = bool(pdata.get("loudness", False))
+        try:
+            target_profile.stereo_width = int(pdata.get("stereo_width", 100))
+        except (ValueError, TypeError, OverflowError):
+            target_profile.stereo_width = 100
+        target_profile.surround_3d = bool(pdata.get("surround_3d", False))
+        target_profile.radar_mode = bool(pdata.get("radar_mode", False))
 
     def _get_all_available_profiles(self):
         """Combina la lista de perfiles predefinidos de fábrica con los perfiles creados por el usuario.
@@ -233,7 +290,6 @@ class EqualizerController:
         desplegable de la ventana de configuración, para que un mismo número de perfil
         (profile_index) signifique siempre lo mismo se mire desde donde se mire.
         """
-        from . import profiles
         all_profs = list(profiles.PREDEFINED_PROFILES)
         all_profs.append(None)
         user_profs = config.load_user_profiles()
@@ -252,7 +308,11 @@ class EqualizerController:
         num_profiles = len(all_profs)
         if num_profiles == 0:
             return
-        new_idx = (self._current_profile.profile_index + delta) % num_profiles
+        try:
+            curr_idx = int(self._current_profile.profile_index if self._current_profile.profile_index is not None else 0)
+        except (ValueError, TypeError, OverflowError):
+            curr_idx = 0
+        new_idx = (curr_idx + delta) % num_profiles
         if all_profs[new_idx] is None:
             # Caímos justo en "Personalizado", que no es un perfil de verdad con
             # valores propios para aplicar: seguimos un paso más en la misma
@@ -265,6 +325,7 @@ class EqualizerController:
         prof = all_profs[new_idx]
         self._apply_preset_to_profile(self._current_profile, prof)
         success = self._sync_backend(self._current_profile, notify_user=False)
+        prof_name = prof.get('name', 'Perfil') if isinstance(prof, dict) else 'Perfil'
         if success:
             config.save_profile(self._current_profile)
             if self._is_dialog_active():
@@ -275,7 +336,10 @@ class EqualizerController:
                 except Exception as ex:
                     log.error(f"AudioEqualizer: Error actualizando UI tras cambiar de perfil: {ex}", exc_info=True)
                     self._dialog_instance = None
-            ui.message(_("Perfil: {prof_name}").format(prof_name=prof['name']))
+            ui.message(_("Perfil: {prof_name}").format(prof_name=prof_name))
+        else:
+            self._current_profile.profile_index = curr_idx
+            ui.message(_("No se pudo aplicar el perfil {prof_name}.").format(prof_name=prof_name))
 
     def next_profile(self) -> None:
         """Avanza al siguiente perfil de ecualización disponible."""
@@ -402,8 +466,14 @@ class EqualizerController:
         """
         attr = "tone_bass" if is_bass else "tone_treble"
         label = "Graves" if is_bass else "Agudos"
-        curr_val = getattr(self._current_profile, attr)
-        new_val = max(constants.MIN_TONE, min(constants.MAX_TONE, round(curr_val + delta, 1)))
+        curr_val = getattr(self._current_profile, attr, 0.0)
+        try:
+            val_f = float(curr_val if curr_val is not None else 0.0)
+            if math.isnan(val_f) or math.isinf(val_f):
+                val_f = 0.0
+        except (ValueError, TypeError, OverflowError):
+            val_f = 0.0
+        new_val = max(constants.MIN_TONE, min(constants.MAX_TONE, round(val_f + delta, 1)))
         setattr(self._current_profile, attr, new_val)
         self._sync_backend(self._current_profile, notify_user=False)
         config.save_profile(self._current_profile)
@@ -440,8 +510,14 @@ class EqualizerController:
         if self._current_profile.auto_preamp:
             ui.message(_("El preamplificador automático está activado. Desactívalo para ajustar manualmente."))
             return
-        curr_val = self._current_profile.preamp
-        new_val = max(constants.MIN_PREAMP, min(constants.MAX_PREAMP, round(curr_val + delta, 1)))
+        curr_val = getattr(self._current_profile, "preamp", 0.0)
+        try:
+            val_f = float(curr_val if curr_val is not None else 0.0)
+            if math.isnan(val_f) or math.isinf(val_f):
+                val_f = 0.0
+        except (ValueError, TypeError, OverflowError):
+            val_f = 0.0
+        new_val = max(constants.MIN_PREAMP, min(constants.MAX_PREAMP, round(val_f + delta, 1)))
         self._current_profile.preamp = new_val
         self._sync_backend(self._current_profile, notify_user=False)
         config.save_profile(self._current_profile)
@@ -472,8 +548,12 @@ class EqualizerController:
 
     def adjust_stereo_width(self, delta: int) -> None:
         """Ajusta el ancho estéreo en pasos porcentuales."""
-        curr_val = self._current_profile.stereo_width
-        new_val = max(constants.MIN_STEREO_WIDTH, min(constants.MAX_STEREO_WIDTH, curr_val + delta))
+        curr_val = getattr(self._current_profile, "stereo_width", 100)
+        try:
+            val_i = int(curr_val if curr_val is not None else 100)
+        except (ValueError, TypeError, OverflowError):
+            val_i = 100
+        new_val = max(constants.MIN_STEREO_WIDTH, min(constants.MAX_STEREO_WIDTH, val_i + delta))
         self._current_profile.stereo_width = new_val
         self._sync_backend(self._current_profile, notify_user=False)
         config.save_profile(self._current_profile)
@@ -488,8 +568,12 @@ class EqualizerController:
 
     def adjust_balance(self, delta: int) -> None:
         """Ajusta el balance estéreo (L/R) en pasos porcentuales."""
-        curr_val = self._current_profile.balance
-        new_val = max(constants.MIN_BALANCE, min(constants.MAX_BALANCE, curr_val + delta))
+        curr_val = getattr(self._current_profile, "balance", 0)
+        try:
+            val_i = int(curr_val if curr_val is not None else 0)
+        except (ValueError, TypeError, OverflowError):
+            val_i = 0
+        new_val = max(constants.MIN_BALANCE, min(constants.MAX_BALANCE, val_i + delta))
         self._current_profile.balance = new_val
         self._sync_backend(self._current_profile, notify_user=False)
         config.save_profile(self._current_profile)
@@ -526,6 +610,14 @@ class EqualizerController:
         curr = getattr(self._current_profile, attr_name, False)
         new_state = not curr
         setattr(self._current_profile, attr_name, new_state)
+        # Exclusión mutua radar/surround con aviso.
+        _extra = ""
+        if attr_name == "surround_3d" and new_state and getattr(self._current_profile, "radar_mode", False):
+            self._current_profile.radar_mode = False
+            _extra = " Se desactivó modo radar por exclusión mutua."
+        elif attr_name == "radar_mode" and new_state and getattr(self._current_profile, "surround_3d", False):
+            self._current_profile.surround_3d = False
+            _extra = " Se desactivó audio 3D por exclusión mutua."
         self._sync_backend(self._current_profile, notify_user=False)
         config.save_profile(self._current_profile)
         if self._is_dialog_active():
@@ -533,11 +625,16 @@ class EqualizerController:
                 cb_attr = f"_{attr_name}_cb"
                 if hasattr(self._dialog_instance, cb_attr):
                     getattr(self._dialog_instance, cb_attr).SetValue(new_state)
+                # Reflejar exclusión en el otro checkbox.
+                if attr_name == "surround_3d" and _extra and hasattr(self._dialog_instance, "_radar_mode_cb"):
+                    self._dialog_instance._radar_mode_cb.SetValue(False)
+                if attr_name == "radar_mode" and _extra and hasattr(self._dialog_instance, "_surround_3d_cb"):
+                    self._dialog_instance._surround_3d_cb.SetValue(False)
             except Exception as ex:
                 log.error(f"AudioEqualizer: Error actualizando {attr_name} en GUI: {ex}", exc_info=True)
                 self._dialog_instance = None
         estado = "activado" if new_state else "desactivado"
-        ui.message(_("{label_name} {estado}").format(label_name=label_name, estado=estado))
+        ui.message(_("{label_name} {estado}").format(label_name=label_name, estado=estado) + _extra)
 
     def toggle_mono(self) -> None:
         """Alterna el modo mono sumando ambos canales acústicos."""
@@ -580,8 +677,8 @@ class EqualizerController:
         self._toggle_feature("ground_hum", "Filtro anti-zumbido eléctrico")
 
     def toggle_surround_3d(self) -> None:
-        """Alterna el efecto 3D espacial (Haas)."""
-        self._toggle_feature("surround_3d", "Efecto 3D espacial (Haas)")
+        """Alterna el audio 3D inmersivo (Binaural HRTF profesional)."""
+        self._toggle_feature("surround_3d", "Audio 3D inmersivo")
 
     def toggle_radar_mode(self) -> None:
         """Alterna el modo radar posicional (HRTF crossfeed)."""

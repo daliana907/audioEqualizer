@@ -16,3 +16,21 @@ $RECYCLE.BIN/
 # IDE
 .vscode/
 .idea/
+
+# Respaldos y temporales locales (nunca subir)
+*.bak
+*.corrupto.bak
+*.old
+*.tmp
+*.bak.*
+
+# Generados/respaldos/temporales comunes (no versionar)
+*.log
+*.pyo
+*.mo
+resultado_github.txt
+1_*
+2_*
+3_*
+4_*
+reintentar*

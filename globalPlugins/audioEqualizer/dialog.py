@@ -20,6 +20,9 @@ except NameError:
 
 
 import wx
+_raw_dead = getattr(wx, "PyDeadObjectError", RuntimeError)
+DeadObjectError = (RuntimeError, _raw_dead) if isinstance(_raw_dead, type) and issubclass(_raw_dead, BaseException) else RuntimeError
+import math
 import ui
 try:
     from logHandler import log
@@ -57,6 +60,7 @@ class EqualizerDialog(wx.Dialog):
         self._profile = profile
         self._band_sliders = []
         self._cleaned_up = False
+        self._apply_timer = None
         
         self._build_ui()
         self.CenterOnScreen()
@@ -86,6 +90,7 @@ class EqualizerDialog(wx.Dialog):
         self._refresh_profiles_list()
         self._profile_choice.SetSelection(self._profile.profile_index)
         self._profile_choice.Bind(wx.EVT_CHOICE, self._on_profile_choice)
+        self._profile_choice.Bind(wx.EVT_KEY_UP, self._on_profile_choice_keyup)
         p_row.Add(profile_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         p_row.Add(self._profile_choice, 1, wx.EXPAND)
         profile_box_sizer.Add(p_row, 0, wx.EXPAND | wx.ALL, 4)
@@ -99,7 +104,7 @@ class EqualizerDialog(wx.Dialog):
         self._delete_profile_btn.Bind(wx.EVT_BUTTON, self._on_delete_profile)
         btn_row.Add(self._delete_profile_btn, 0, wx.RIGHT, 6)
 
-        self._test_audio_btn = wx.Button(scroll_panel, label="Comprobar canales de audi&o")
+        self._test_audio_btn = wx.Button(scroll_panel, label="Comprobar canales de a&udio")
         self._test_audio_btn.Bind(wx.EVT_BUTTON, self._on_test_audio)
         btn_row.Add(self._test_audio_btn, 0)
         profile_box_sizer.Add(btn_row, 0, wx.ALL, 4)
@@ -112,12 +117,99 @@ class EqualizerDialog(wx.Dialog):
         self._enabled_cb.Bind(wx.EVT_CHECKBOX, self._on_apply)
         main_sizer.Add(self._enabled_cb, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
-        # 3. Preamplificación
+        # 3. Configuración de canales y sonido envolvente
+        chan_box = wx.StaticBox(scroll_panel, label="Canales y sonido envolvente")
+        chan_sizer = wx.StaticBoxSizer(chan_box, wx.VERTICAL)
+
+        mode_row = wx.BoxSizer(wx.HORIZONTAL)
+        mode_lbl = wx.StaticText(scroll_panel, label="Configuración de canales:")
+        self._channel_mode_keys = [
+            constants.CHANNEL_MODE_STEREO,
+            constants.CHANNEL_MODE_5_1,
+            constants.CHANNEL_MODE_7_1,
+            constants.CHANNEL_MODE_QUAD,
+            constants.CHANNEL_MODE_DOWNMIX_5_1,
+            constants.CHANNEL_MODE_DOWNMIX_7_1,
+        ]
+        self._channel_mode_choice = wx.Choice(
+            scroll_panel,
+            name=_("Configuración de canales"),
+            choices=[
+                _("Estéreo estándar (2.0)"),
+                _("Envolvente 5.1 (Frontal, Central, Subwoofer, Traseros)"),
+                _("Envolvente 7.1 (Frontal, Central, Subwoofer, Traseros, Laterales)"),
+                _("Cuadrafónico (4.0 - 4 altavoces)"),
+                _("Mezcla inteligente 5.1 a Estéreo (Películas/juegos a auriculares)"),
+                _("Mezcla inteligente 7.1 a Estéreo (Películas/juegos a auriculares)"),
+            ]
+        )
+        cur_mode = getattr(self._profile, "channel_mode", constants.DEFAULT_CHANNEL_MODE)
+        if cur_mode in self._channel_mode_keys:
+            self._channel_mode_choice.SetSelection(self._channel_mode_keys.index(cur_mode))
+        else:
+            self._channel_mode_choice.SetSelection(0)
+        self._channel_mode_choice.SetName(_("Configuración de canales"))
+        self._channel_mode_choice.Bind(wx.EVT_CHOICE, self._on_channel_mode_choice)
+        mode_row.Add(mode_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        mode_row.Add(self._channel_mode_choice, 1, wx.EXPAND)
+        chan_sizer.Add(mode_row, 0, wx.EXPAND | wx.ALL, 4)
+
+        c_row = wx.BoxSizer(wx.HORIZONTAL)
+        c_lbl = wx.StaticText(scroll_panel, label="Canal Central (voces):", size=(175, -1))
+        self._center_slider = wx.Slider(
+            scroll_panel,
+            value=int(round(getattr(self._profile, "center_gain", constants.DEFAULT_CENTER_GAIN))),
+            minValue=int(constants.MIN_CHANNEL_GAIN),
+            maxValue=int(constants.MAX_CHANNEL_GAIN),
+            style=wx.SL_HORIZONTAL,
+            name="Canal Central (voces)"
+        )
+        self._center_slider.Bind(wx.EVT_SLIDER, self._on_center_scroll)
+        c_row.Add(c_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        c_row.Add(self._center_slider, 1, wx.EXPAND)
+        chan_sizer.Add(c_row, 0, wx.EXPAND | wx.ALL, 4)
+
+        sub_row = wx.BoxSizer(wx.HORIZONTAL)
+        sub_lbl = wx.StaticText(scroll_panel, label="Subwoofer (graves LFE):", size=(175, -1))
+        self._subwoofer_slider = wx.Slider(
+            scroll_panel,
+            value=int(round(getattr(self._profile, "subwoofer_gain", constants.DEFAULT_SUBWOOFER_GAIN))),
+            minValue=int(constants.MIN_CHANNEL_GAIN),
+            maxValue=int(constants.MAX_CHANNEL_GAIN),
+            style=wx.SL_HORIZONTAL,
+            name="Subwoofer (graves LFE)"
+        )
+        self._subwoofer_slider.Bind(wx.EVT_SLIDER, self._on_subwoofer_scroll)
+        sub_row.Add(sub_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        sub_row.Add(self._subwoofer_slider, 1, wx.EXPAND)
+        chan_sizer.Add(sub_row, 0, wx.EXPAND | wx.ALL, 4)
+
+        sur_row = wx.BoxSizer(wx.HORIZONTAL)
+        sur_lbl = wx.StaticText(scroll_panel, label="Canales traseros / Surround:", size=(175, -1))
+        self._surround_slider = wx.Slider(
+            scroll_panel,
+            value=int(round(getattr(self._profile, "surround_gain", constants.DEFAULT_SURROUND_GAIN))),
+            minValue=int(constants.MIN_CHANNEL_GAIN),
+            maxValue=int(constants.MAX_CHANNEL_GAIN),
+            style=wx.SL_HORIZONTAL,
+            name="Canales traseros / Surround"
+        )
+        self._surround_slider.Bind(wx.EVT_SLIDER, self._on_surround_scroll)
+        sur_row.Add(sur_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        sur_row.Add(self._surround_slider, 1, wx.EXPAND)
+        chan_sizer.Add(sur_row, 0, wx.EXPAND | wx.ALL, 4)
+
+        self._update_channel_controls_state()
+        self._update_channel_names()
+
+        main_sizer.Add(chan_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        # 4. Preamplificación
         preamp_box = wx.StaticBox(scroll_panel, label="Preamplificación y control de ganancia")
         preamp_sizer = wx.StaticBoxSizer(preamp_box, wx.VERTICAL)
         
         preamp_row = wx.BoxSizer(wx.HORIZONTAL)
-        preamp_lbl = wx.StaticText(scroll_panel, label="&Preamplificación:", size=(120, -1))
+        preamp_lbl = wx.StaticText(scroll_panel, label="Preamplificación:", size=(120, -1))
         self._preamp_slider = wx.Slider(
             scroll_panel,
             value=int(self._profile.preamp),
@@ -131,7 +223,7 @@ class EqualizerDialog(wx.Dialog):
         preamp_row.Add(self._preamp_slider, 1, wx.EXPAND)
         preamp_sizer.Add(preamp_row, 0, wx.EXPAND | wx.ALL, 4)
 
-        self._auto_preamp_cb = wx.CheckBox(scroll_panel, label="Preamp &automático (evita saturación y distorsión)")
+        self._auto_preamp_cb = wx.CheckBox(scroll_panel, label="Preamp au&tomático (evita saturación y distorsión)")
         self._auto_preamp_cb.SetValue(self._profile.auto_preamp)
         self._auto_preamp_cb.Bind(wx.EVT_CHECKBOX, self._on_auto_preamp_check)
         self._preamp_slider.Enable(not self._profile.auto_preamp)
@@ -143,7 +235,7 @@ class EqualizerDialog(wx.Dialog):
         opt_box = wx.StaticBox(scroll_panel, label="Mejoras acústicas y espaciales")
         opt_sizer = wx.StaticBoxSizer(opt_box, wx.VERTICAL)
 
-        self._loudness_cb = wx.CheckBox(scroll_panel, label="&Loudness isofónico (Compensación para bajo volumen Fletcher-Munson)")
+        self._loudness_cb = wx.CheckBox(scroll_panel, label="Loudness isofónico (Compensación para bajo volumen Fletcher-Munson)")
         self._loudness_cb.SetValue(self._profile.loudness)
         self._loudness_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         opt_sizer.Add(self._loudness_cb, 0, wx.ALL, 4)
@@ -161,12 +253,12 @@ class EqualizerDialog(wx.Dialog):
 
         
 
-        self._surround_3d_cb = wx.CheckBox(scroll_panel, label="Efecto &3D Espacial (Amplitud inmersiva Haas)")
+        self._surround_3d_cb = wx.CheckBox(scroll_panel, label="Audio &3D Inmersivo (Binaural HRTF profesional)")
         self._surround_3d_cb.SetValue(getattr(self._profile, "surround_3d", False))
         self._surround_3d_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         opt_sizer.Add(self._surround_3d_cb, 0, wx.ALL, 4)
 
-        self._radar_mode_cb = wx.CheckBox(scroll_panel, label="Modo &Radar (Precisión posicional 360 para detalles)")
+        self._radar_mode_cb = wx.CheckBox(scroll_panel, label="Mo&do Radar (Precisión posicional 360 para detalles)")
         self._radar_mode_cb.SetValue(getattr(self._profile, "radar_mode", False))
         self._radar_mode_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         opt_sizer.Add(self._radar_mode_cb, 0, wx.ALL, 4)
@@ -228,7 +320,7 @@ class EqualizerDialog(wx.Dialog):
         tone_sizer.Add(bass_row, 0, wx.EXPAND | wx.ALL, 4)
 
         treble_row = wx.BoxSizer(wx.HORIZONTAL)
-        treble_lbl = wx.StaticText(scroll_panel, label="A&gudos rápidos (8 kHz):", size=(150, -1))
+        treble_lbl = wx.StaticText(scroll_panel, label="Agudos rápidos (8 &kHz):", size=(150, -1))
         self._tone_treble_slider = wx.Slider(
             scroll_panel,
             value=int(round(self._profile.tone_treble)),
@@ -247,7 +339,7 @@ class EqualizerDialog(wx.Dialog):
         opt_sizer.Add(tone_sizer, 0, wx.EXPAND | wx.ALL, 4)
         main_sizer.Add(opt_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
-        # 5. Mejoras acústicas para auriculares profesionales
+        # 6. Mejoras acústicas para auriculares profesionales
         hp_box = wx.StaticBox(scroll_panel, label="Mejoras para auriculares profesionales")
         hp_sizer = wx.StaticBoxSizer(hp_box, wx.VERTICAL)
 
@@ -266,7 +358,7 @@ class EqualizerDialog(wx.Dialog):
         self._sub_bass_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         hp_sizer.Add(self._sub_bass_cb, 0, wx.ALL, 4)
 
-        self._clarity_cb = wx.CheckBox(scroll_panel, label="Realce de clari&dad y presencia (+5.5 dB en 5.5 kHz, voz y brillo nítidos)")
+        self._clarity_cb = wx.CheckBox(scroll_panel, label="Realce de claridad &y presencia (+5.5 dB en 5.5 kHz, voz y brillo nítidos)")
         self._clarity_cb.SetValue(self._profile.clarity)
         self._clarity_cb.Bind(wx.EVT_CHECKBOX, self._on_enhancement_check)
         hp_sizer.Add(self._clarity_cb, 0, wx.ALL, 4)
@@ -321,7 +413,7 @@ class EqualizerDialog(wx.Dialog):
         btn_panel = wx.Panel(self)
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
-        apply_btn = wx.Button(btn_panel, label="A&plicar")
+        apply_btn = wx.Button(btn_panel, label="Aplicar")
         apply_btn.Bind(wx.EVT_BUTTON, self._on_apply_button)
         btn_sizer.Add(apply_btn, 0, wx.RIGHT, 5)
 
@@ -329,7 +421,7 @@ class EqualizerDialog(wx.Dialog):
         reset_btn.Bind(wx.EVT_BUTTON, self._on_reset)
         btn_sizer.Add(reset_btn, 0, wx.RIGHT, 5)
 
-        log_btn = wx.Button(btn_panel, label="Ver &registro (Log)")
+        log_btn = wx.Button(btn_panel, label="Ver registr&o (Log)")
         log_btn.Bind(wx.EVT_BUTTON, self._on_view_log)
         btn_sizer.Add(log_btn, 0, wx.RIGHT, 5)
 
@@ -349,6 +441,11 @@ class EqualizerDialog(wx.Dialog):
         self.SetEscapeId(wx.ID_CANCEL)
         self.Bind(wx.EVT_CLOSE, self._on_cancel)
         self.Bind(wx.EVT_WINDOW_DESTROY, self._on_window_destroy)
+        # Foco inicial en el selector de perfil (tab order = orden de creación).
+        try:
+            self._profile_choice.SetFocus()
+        except Exception:
+            pass
 
     def _update_balance_name(self):
         """Actualiza el nombre accesible del slider de balance según si está centrado, a la izquierda o a la derecha."""
@@ -390,7 +487,22 @@ class EqualizerDialog(wx.Dialog):
                     self._update_profile_buttons_state()
 
     def _on_enhancement_check(self, event):
-        """Maneja la conmutación de cualquier mejora acústica del perfil."""
+        """Maneja la conmutación de cualquier mejora acústica con exclusión radar/surround."""
+        try:
+            # Exclusión mutua: radar y surround no pueden estar activos a la vez.
+            ctrl = getattr(event, "GetEventObject", lambda: None)() if event else None
+            is_surround_evt = ctrl is getattr(self, "_surround_3d_cb", None)
+            is_radar_evt = ctrl is getattr(self, "_radar_mode_cb", None)
+            if is_surround_evt and self._surround_3d_cb.GetValue() and self._radar_mode_cb.GetValue():
+                self._radar_mode_cb.SetValue(False)
+                ui.message(_("Audio 3D activado; modo radar desactivado por exclusión mutua."))
+            elif is_radar_evt and self._radar_mode_cb.GetValue() and self._surround_3d_cb.GetValue():
+                self._surround_3d_cb.SetValue(False)
+                ui.message(_("Modo radar activado; audio 3D desactivado por exclusión mutua."))
+        except DeadObjectError:
+            return
+        except Exception:
+            pass
         self._mark_custom_profile()
         self._on_apply(event)
         if event and hasattr(event, "Skip"):
@@ -415,6 +527,66 @@ class EqualizerDialog(wx.Dialog):
     def _on_tone_scroll(self, event):
         """Maneja el desplazamiento de los sliders de tono rápido: actualiza nombres accesibles y aplica el cambio."""
         self._update_tone_names()
+        self._mark_custom_profile()
+        self._on_apply(event)
+        event.Skip()
+
+    def _update_channel_controls_state(self):
+        """Mantiene los controles de canales siempre activos y accesibles por teclado para el usuario."""
+        if hasattr(self, "_center_slider"):
+            self._center_slider.Enable(True)
+        if hasattr(self, "_subwoofer_slider"):
+            self._subwoofer_slider.Enable(True)
+        if hasattr(self, "_surround_slider"):
+            self._surround_slider.Enable(True)
+
+    def _update_channel_names(self):
+        """Actualiza los nombres accesibles de la configuración de canales para NVDA."""
+        if hasattr(self, "_channel_mode_choice") and self._channel_mode_choice:
+            self._channel_mode_choice.SetName(_("Configuración de canales"))
+        if hasattr(self, "_center_slider") and self._center_slider:
+            c_val = self._center_slider.GetValue()
+            self._center_slider.SetName(f"Canal Central (voces), {c_val} decibelios")
+        if hasattr(self, "_subwoofer_slider") and self._subwoofer_slider:
+            sub_val = self._subwoofer_slider.GetValue()
+            self._subwoofer_slider.SetName(f"Subwoofer (graves LFE), {sub_val} decibelios")
+        if hasattr(self, "_surround_slider") and self._surround_slider:
+            sur_val = self._surround_slider.GetValue()
+            self._surround_slider.SetName(f"Canales traseros y envolventes, {sur_val} decibelios")
+
+    def _on_channel_mode_choice(self, event=None):
+        """Maneja la selección de configuración de canales: verbaliza la elección, actualiza nombres y aplica."""
+        self._update_channel_controls_state()
+        self._update_channel_names()
+        sel = self._channel_mode_choice.GetSelection()
+        all_strs = self._channel_mode_choice.GetStrings()
+        if 0 <= sel < len(all_strs):
+            try:
+                ui.message(_("Configuración de canales: {mode}").format(mode=all_strs[sel]))
+            except Exception:
+                pass
+        self._mark_custom_profile()
+        self._on_apply(event)
+        if event and hasattr(event, "Skip"):
+            event.Skip()
+
+    def _on_center_scroll(self, event):
+        """Maneja el desplazamiento del deslizador del canal Central."""
+        self._update_channel_names()
+        self._mark_custom_profile()
+        self._on_apply(event)
+        event.Skip()
+
+    def _on_subwoofer_scroll(self, event):
+        """Maneja el desplazamiento del deslizador del Subwoofer."""
+        self._update_channel_names()
+        self._mark_custom_profile()
+        self._on_apply(event)
+        event.Skip()
+
+    def _on_surround_scroll(self, event):
+        """Maneja el desplazamiento del deslizador de canales traseros / surround."""
+        self._update_channel_names()
         self._mark_custom_profile()
         self._on_apply(event)
         event.Skip()
@@ -455,25 +627,27 @@ class EqualizerDialog(wx.Dialog):
                 "Guardar perfil personalizado",
                 ""
             )
-            if dlg.ShowModal() == wx.ID_OK:
-                name = dlg.GetValue().strip()
-                if not name:
-                    ui.message(_("El nombre del perfil no puede estar vacío."))
-                    dlg.Destroy()
-                    return
-                self._sync_profile_from_ui()
-                success = config.save_user_profile(name, self._profile)
-                if success:
-                    self._refresh_profiles_list()
-                    user_profs = config.load_user_profiles()
-                    new_idx = profiles.CUSTOM_INDEX + len(user_profs)
-                    self._profile_choice.SetSelection(new_idx)
-                    self._profile.profile_index = new_idx
-                    self._update_profile_buttons_state()
-                    ui.message(_("Perfil '{name}' guardado correctamente.").format(name=name))
-                else:
-                    ui.message(_("Error al guardar el perfil personalizado."))
-            dlg.Destroy()
+            try:
+                if dlg.ShowModal() == wx.ID_OK:
+                    name = dlg.GetValue().strip()
+                    valid, err_msg = config.validate_profile_name(name)
+                    if not valid:
+                        ui.message(err_msg)
+                        return
+                    self._sync_profile_from_ui()
+                    success = config.save_user_profile(name, self._profile)
+                    if success:
+                        self._refresh_profiles_list()
+                        user_profs = config.load_user_profiles()
+                        new_idx = profiles.CUSTOM_INDEX + len(user_profs)
+                        self._profile_choice.SetSelection(new_idx)
+                        self._profile.profile_index = new_idx
+                        self._update_profile_buttons_state()
+                        ui.message(_("Perfil '{name}' guardado correctamente.").format(name=name))
+                    else:
+                        ui.message(_("Error al guardar el perfil personalizado."))
+            finally:
+                dlg.Destroy()
         except Exception as e:
             log.error(f"AudioEqualizer: Error al guardar perfil personalizado: {e}", exc_info=True)
             logger.log_error(f"Error al guardar perfil personalizado: {e}", exc=e, component="EqualizerDialog")
@@ -498,14 +672,17 @@ class EqualizerDialog(wx.Dialog):
                     "Confirmar eliminación",
                     wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION
                 )
-                if dlg.ShowModal() == wx.ID_YES:
-                    config.delete_user_profile(prof_name)
-                    self._refresh_profiles_list()
-                    self._profile_choice.SetSelection(0)
-                    self._apply_profile_to_ui(0)
-                    self._on_apply(None)
-                    ui.message(_("Perfil '{prof_name}' eliminado.").format(prof_name=prof_name))
-                dlg.Destroy()
+                try:
+                    if dlg.ShowModal() == wx.ID_YES:
+                        config.delete_user_profile(prof_name)
+                        self._refresh_profiles_list()
+                        self._profile_choice.SetSelection(0)
+                        self._apply_profile_to_ui(0)
+                        self._sync_profile_from_ui()
+                        self._controller.apply_profile(self._profile, save=True)
+                        ui.message(_("Perfil '{prof_name}' eliminado.").format(prof_name=prof_name))
+                finally:
+                    dlg.Destroy()
         except Exception as e:
             log.error(f"AudioEqualizer: Error al eliminar perfil personalizado: {e}", exc_info=True)
             logger.log_error(f"Error al eliminar perfil personalizado: {e}", exc=e, component="EqualizerDialog")
@@ -533,34 +710,60 @@ class EqualizerDialog(wx.Dialog):
             self._update_profile_buttons_state()
             return
 
-        gains = prof.get("gains", [])
+        gains = config._parse_gains(prof.get("gains", []))
         for i, slider in enumerate(self._band_sliders):
             if i < len(gains):
-                slider.SetValue(int(round(gains[i])))
+                val_gain = max(constants.MIN_GAIN, min(constants.MAX_GAIN, gains[i]))
+                slider.SetValue(int(round(val_gain)))
                 freq = constants.EQ_BANDS[i]
                 f_str = f"{freq} Hz" if freq < 1000 else f"{freq/1000:g} kHz"
-                slider.SetName(f"{f_str}, ganancia, {int(round(gains[i]))} decibelios")
+                slider.SetName(f"{f_str}, ganancia, {int(round(val_gain))} decibelios")
 
         if "preamp" in prof:
-            self._preamp_slider.SetValue(int(round(prof["preamp"])))
-            self._preamp_slider.SetName(f"Preamplificación, {int(round(prof['preamp']))} decibelios")
+            try:
+                val_preamp = float(prof["preamp"])
+                if math.isnan(val_preamp) or math.isinf(val_preamp):
+                    val_preamp = 0.0
+                else:
+                    val_preamp = max(constants.MIN_PREAMP, min(constants.MAX_PREAMP, val_preamp))
+            except (ValueError, TypeError, OverflowError):
+                val_preamp = 0.0
+            self._preamp_slider.SetValue(int(round(val_preamp)))
+            self._preamp_slider.SetName(f"Preamplificación, {int(round(val_preamp))} decibelios")
             self._auto_preamp_cb.SetValue(bool(prof.get("auto_preamp", False)))
         else:
-            # Ninguno de los perfiles de fábrica trae su propio valor de preamp seguro.
-            # Se activa el preamp automático para que Equalizer APO calcule uno seguro
-            # según este perfil, en vez de arrastrar el valor manual que hubiera quedado
-            # de un perfil anterior (que podía saturar el sonido con perfiles como
-            # "Más graves", que realza varias bandas sin ningún recorte que lo compense).
             self._auto_preamp_cb.SetValue(True)
         self._preamp_slider.Enable(not self._auto_preamp_cb.GetValue())
 
         # Controles de tono rápido del perfil
-        self._tone_bass_slider.SetValue(int(round(prof.get("tone_bass", 0.0))))
-        self._tone_treble_slider.SetValue(int(round(prof.get("tone_treble", 0.0))))
+        try:
+            val_tb = float(prof.get("tone_bass", 0.0))
+            if math.isnan(val_tb) or math.isinf(val_tb):
+                val_tb = 0.0
+            else:
+                val_tb = max(constants.MIN_TONE, min(constants.MAX_TONE, val_tb))
+        except (ValueError, TypeError, OverflowError):
+            val_tb = 0.0
+        self._tone_bass_slider.SetValue(int(round(val_tb)))
+
+        try:
+            val_tt = float(prof.get("tone_treble", 0.0))
+            if math.isnan(val_tt) or math.isinf(val_tt):
+                val_tt = 0.0
+            else:
+                val_tt = max(constants.MIN_TONE, min(constants.MAX_TONE, val_tt))
+        except (ValueError, TypeError, OverflowError):
+            val_tt = 0.0
+        self._tone_treble_slider.SetValue(int(round(val_tt)))
         self._update_tone_names()
 
         # Ancho estéreo óptimo del perfil
-        self._width_slider.SetValue(int(prof.get("stereo_width", 100)))
+        try:
+            val_sw = int(round(float(prof.get("stereo_width", 100))))
+            val_sw = max(constants.MIN_STEREO_WIDTH, min(constants.MAX_STEREO_WIDTH, val_sw))
+        except (ValueError, TypeError, OverflowError):
+            val_sw = 100
+        self._width_slider.SetValue(val_sw)
         self._update_width_name()
 
         # Mejoras para auriculares profesionales
@@ -590,37 +793,49 @@ class EqualizerDialog(wx.Dialog):
             self._surround_3d_cb.SetValue(bool(prof.get("surround_3d", False)))
         if hasattr(self, "_radar_mode_cb") and self._radar_mode_cb:
             self._radar_mode_cb.SetValue(bool(prof.get("radar_mode", False)))
+
+        # Configuración de canales multicanal
+        mode_val = prof.get("channel_mode", constants.DEFAULT_CHANNEL_MODE)
+        if hasattr(self, "_channel_mode_choice") and self._channel_mode_choice:
+            if mode_val in self._channel_mode_keys:
+                self._channel_mode_choice.SetSelection(self._channel_mode_keys.index(mode_val))
+            else:
+                self._channel_mode_choice.SetSelection(0)
+        if hasattr(self, "_center_slider") and self._center_slider:
+            self._center_slider.SetValue(int(round(float(prof.get("center_gain", constants.DEFAULT_CENTER_GAIN)))))
+        if hasattr(self, "_subwoofer_slider") and self._subwoofer_slider:
+            self._subwoofer_slider.SetValue(int(round(float(prof.get("subwoofer_gain", constants.DEFAULT_SUBWOOFER_GAIN)))))
+        if hasattr(self, "_surround_slider") and self._surround_slider:
+            self._surround_slider.SetValue(int(round(float(prof.get("surround_gain", constants.DEFAULT_SURROUND_GAIN)))))
+        self._update_channel_controls_state()
+        self._update_channel_names()
+
         self._update_profile_buttons_state()
 
     
-    def _on_profile_choice_keyup(self, event):
-        idx = self._profile_choice.GetSelection()
-        if hasattr(self, "_last_profile_idx") and self._last_profile_idx != idx:
-            self._last_profile_idx = idx
-            self._apply_profile_to_ui(idx)
-            self._on_apply(None)
-            self._update_profile_buttons_state()
-            all_choices = self._profile_choice.GetStrings()
-            if 0 <= idx < len(all_choices):
-                from logHandler import log
-                try:
-                    import ui
-                    ui.message(_("Perfil: {choice}").format(choice=all_choices[idx]))
-                except Exception:
-                    pass
-        event.Skip()
-
-    def _on_profile_choice(self, event):
-        self._last_profile_idx = self._profile_choice.GetSelection()
-
-        """Aplica el perfil elegido en la lista desplegable, anuncia el nombre del perfil y actualiza los botones."""
-        idx = self._profile_choice.GetSelection()
+    def _activarPerfilSeleccionado(self, idx, event=None):
+        """Aplica el perfil en la interfaz, guarda los cambios, actualiza botones y lo verbaliza."""
+        self._last_profile_idx = idx
         self._apply_profile_to_ui(idx)
         self._on_apply(event)
         self._update_profile_buttons_state()
         all_choices = self._profile_choice.GetStrings()
         if 0 <= idx < len(all_choices):
-            ui.message(_("Perfil: {choice}").format(choice=all_choices[idx]))
+            try:
+                ui.message(_("Perfil: {choice}").format(choice=all_choices[idx]))
+            except Exception:
+                pass
+
+    def _on_profile_choice_keyup(self, event):
+        idx = self._profile_choice.GetSelection()
+        if hasattr(self, "_last_profile_idx") and self._last_profile_idx != idx:
+            self._activarPerfilSeleccionado(idx, event=None)
+        event.Skip()
+
+    def _on_profile_choice(self, event):
+        """Aplica el perfil elegido en la lista desplegable, anuncia el nombre del perfil y actualiza los botones."""
+        idx = self._profile_choice.GetSelection()
+        self._activarPerfilSeleccionado(idx, event=event)
         event.Skip()
 
     def _on_band_slider_scroll(self, event, slider, f_txt):
@@ -646,60 +861,121 @@ class EqualizerDialog(wx.Dialog):
         event.Skip()
 
     def _sync_profile_from_ui(self):
-        """Lee el estado de todos los controles visuales y actualiza el objeto perfil en memoria.
+        """Lee el estado de todos los controles y actualiza el perfil sin mutación parcial.
 
-        Recopila el estado de las casillas de verificación, los deslizadores de balance y
-        ancho estéreo, los controles rápidos de graves/agudos y los deslizadores de las 31 bandas.
+        Valida todos los GetValue primero; si algún control está muerto
+        (DeadObject) aborta sin modificar _profile. Preserva float en tonos/gains.
         """
-        self._profile.enabled = self._enabled_cb.GetValue()
-        self._profile.preamp = float(self._preamp_slider.GetValue())
-        self._profile.auto_preamp = self._auto_preamp_cb.GetValue()
-        self._profile.loudness = self._loudness_cb.GetValue()
-        self._profile.ground_hum = self._ground_hum_cb.GetValue()
-        self._profile.mono = self._mono_cb.GetValue()
-        self._profile.surround_3d = getattr(self, "_surround_3d_cb").GetValue() if hasattr(self, "_surround_3d_cb") else False
-        self._profile.radar_mode = getattr(self, "_radar_mode_cb").GetValue() if hasattr(self, "_radar_mode_cb") else False
-        self._profile.swap_channels = self._swap_cb.GetValue()
-        self._profile.balance = self._balance_slider.GetValue()
-        self._profile.tone_bass = float(self._tone_bass_slider.GetValue())
-        self._profile.tone_treble = float(self._tone_treble_slider.GetValue())
-        self._profile.sub_bass = self._sub_bass_cb.GetValue()
-        self._profile.clarity = self._clarity_cb.GetValue()
-        self._profile.anti_sibilance = self._anti_sibilance_cb.GetValue()
-        self._profile.anti_fatigue = self._anti_fatigue_cb.GetValue()
-        self._profile.subsonic = self._subsonic_cb.GetValue()
-        self._profile.nvda_voice = self._nvda_voice_cb.GetValue()
-        self._profile.stereo_width = self._width_slider.GetValue()
+        try:
+            v_enabled = self._enabled_cb.GetValue()
+            v_preamp = self._preamp_slider.GetValue()
+            v_auto = self._auto_preamp_cb.GetValue()
+            v_loud = self._loudness_cb.GetValue()
+            v_hum = self._ground_hum_cb.GetValue()
+            v_mono = self._mono_cb.GetValue()
+            v_sur = self._surround_3d_cb.GetValue() if hasattr(self, "_surround_3d_cb") and self._surround_3d_cb else False
+            v_radar = self._radar_mode_cb.GetValue() if hasattr(self, "_radar_mode_cb") and self._radar_mode_cb else False
+            v_swap = self._swap_cb.GetValue()
+            v_bal = self._balance_slider.GetValue()
+            v_bass = self._tone_bass_slider.GetValue()
+            v_treble = self._tone_treble_slider.GetValue()
+            v_subbass = self._sub_bass_cb.GetValue()
+            v_clarity = self._clarity_cb.GetValue()
+            v_sib = self._anti_sibilance_cb.GetValue()
+            v_fat = self._anti_fatigue_cb.GetValue()
+            v_subsonic = self._subsonic_cb.GetValue()
+            v_voice = self._nvda_voice_cb.GetValue()
+            v_width = self._width_slider.GetValue()
+            v_chan_idx = self._channel_mode_choice.GetSelection() if hasattr(self, "_channel_mode_choice") else 0
+            v_center = self._center_slider.GetValue() if hasattr(self, "_center_slider") else 0
+            v_sub = self._subwoofer_slider.GetValue() if hasattr(self, "_subwoofer_slider") else 0
+            v_surround = self._surround_slider.GetValue() if hasattr(self, "_surround_slider") else 0
+            v_idx = self._profile_choice.GetSelection()
+            v_gains = [float(s.GetValue()) for s in self._band_sliders]
+        except DeadObjectError:
+            log.debug("AudioEqualizer: _sync_profile_from_ui abortado por DeadObject; sin mutación parcial.")
+            raise
+        except RuntimeError as e:
+            if "deleted" in str(e).lower() or "dead" in str(e).lower():
+                log.debug(f"AudioEqualizer: _sync abortado por objeto destruido: {e}")
+                raise
+            raise
+        # Exclusión mutua también al sincronizar desde UI.
+        if bool(v_sur) and bool(v_radar):
+            v_radar = False
+            try:
+                if hasattr(self, "_radar_mode_cb") and self._radar_mode_cb:
+                    self._radar_mode_cb.SetValue(False)
+                ui.message(_("Audio 3D y radar son excluyentes; se desactivó radar."))
+            except Exception:
+                pass
+        # Solo tras validar todo, asignar al perfil (preservando float).
+        self._profile.enabled = bool(v_enabled)
+        self._profile.preamp = float(v_preamp)
+        self._profile.auto_preamp = bool(v_auto)
+        self._profile.loudness = bool(v_loud)
+        self._profile.ground_hum = bool(v_hum)
+        self._profile.mono = bool(v_mono)
+        self._profile.surround_3d = bool(v_sur)
+        self._profile.radar_mode = bool(v_radar)
+        self._profile.swap_channels = bool(v_swap)
+        self._profile.balance = int(v_bal)
+        self._profile.tone_bass = float(v_bass)
+        self._profile.tone_treble = float(v_treble)
+        self._profile.sub_bass = bool(v_subbass)
+        self._profile.clarity = bool(v_clarity)
+        self._profile.anti_sibilance = bool(v_sib)
+        self._profile.anti_fatigue = bool(v_fat)
+        self._profile.subsonic = bool(v_subsonic)
+        self._profile.nvda_voice = bool(v_voice)
+        self._profile.stereo_width = int(v_width)
+        if 0 <= v_chan_idx < len(self._channel_mode_keys):
+            self._profile.channel_mode = self._channel_mode_keys[v_chan_idx]
+        else:
+            self._profile.channel_mode = constants.DEFAULT_CHANNEL_MODE
+        self._profile.center_gain = float(v_center)
+        self._profile.subwoofer_gain = float(v_sub)
+        self._profile.surround_gain = float(v_surround)
         
-        prof_idx = self._profile_choice.GetSelection()
+        prof_idx = int(v_idx)
         self._profile.profile_index = prof_idx
         # LECTURA DIRECTA DE LA INTERFAZ SIEMPRE (para guardar modificaciones en perfiles de fábrica)
-        self._profile.gains = [float(s.GetValue()) for s in self._band_sliders]
+        self._profile.gains = [float(g) for g in v_gains]
         
         # SI ESTAMOS EN UN PERFIL DE FÁBRICA, GUARDAR EL OVERRIDE EN DISCO Y MEMORIA
-        from . import profiles
         if prof_idx < profiles.CUSTOM_INDEX:
-            from . import config
             config.save_factory_override(prof_idx, self._profile)
 
     def _on_apply(self, event=None):
-        """Aplica los cambios en tiempo real en Equalizer APO sin cerrar la ventana.
+        """Aplica los cambios en tiempo real con debounce coalescente de 350 ms.
 
         Permite escuchar inmediatamente el resultado acústico mientras se ajustan los deslizadores.
-        Para que mover un control deslizante rápido no dispare una escritura en disco por cada
-        pasito (lo que podía trabar la ventana), se espera una fracción de segundo desde el
-        último movimiento antes de aplicar el cambio de verdad.
+        Coalesca movimientos rápidos: cancela el timer previo y programa uno nuevo.
         """
         if event and hasattr(event, "Skip"):
-            event.Skip()
-        if getattr(self, "_cleaned_up", False):
-            return
-        if getattr(self, "_apply_timer", None) is not None:
             try:
-                self._apply_timer.Stop()
+                event.Skip()
             except Exception:
                 pass
-        self._apply_timer = wx.CallLater(120, self._do_apply_now)
+        if getattr(self, "_cleaned_up", False):
+            return
+        try:
+            _t = getattr(self, "_apply_timer", None)
+            if _t is not None:
+                try:
+                    _t.Stop()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        try:
+            self._apply_timer = wx.CallLater(350, self._do_apply_now)
+        except Exception:
+            # Si CallLater no disponible (tests), aplicar directo.
+            try:
+                self._do_apply_now()
+            except Exception:
+                pass
 
     def _do_apply_now(self):
         """Aplica de verdad, en disco, el último estado de los controles tras la breve espera de _on_apply."""
@@ -741,7 +1017,7 @@ class EqualizerDialog(wx.Dialog):
         try:
             self._sync_profile_from_ui()
             self._controller.apply_profile(self._profile, save=True)
-            self._cleanup()
+            self._cleanup(wx.ID_OK)
         except Exception as e:
             log.error(f"AudioEqualizer: Error al guardar cambios y cerrar: {e}", exc_info=True)
             try:
@@ -760,7 +1036,7 @@ class EqualizerDialog(wx.Dialog):
                 logger.log_error(f"Error en Cancelar de GUI: {e}", exc=e, component="EqualizerDialog")
             except Exception:
                 pass
-        self._cleanup()
+        self._cleanup(wx.ID_CANCEL)
 
     def _on_reset(self, event):
         """Restablece los controles a sus valores iniciales.
@@ -806,6 +1082,8 @@ class EqualizerDialog(wx.Dialog):
                 self._subsonic_cb.SetValue(False)
             if hasattr(self, "_nvda_voice_cb") and self._nvda_voice_cb:
                 self._nvda_voice_cb.SetValue(False)
+            if hasattr(self, "_surround_3d_cb") and self._surround_3d_cb:
+                self._surround_3d_cb.SetValue(False)
 
             if prof_idx < profiles.CUSTOM_INDEX:
                 from . import config
@@ -868,10 +1146,14 @@ class EqualizerDialog(wx.Dialog):
         except Exception:
             pass
 
-    def _cleanup(self):
+    def _cleanup(self, code=None):
         """Cierra y destruye la ventana asegurando la liberación de recursos."""
         self._cleanup_controller_ref()
+        if code is None:
+            code = getattr(wx, "ID_OK", 5100)
+        if hasattr(self, "IsModal") and self.IsModal():
+            self.EndModal(code)
         try:
             self.Destroy()
-        except (RuntimeError, wx.PyDeadObjectError):
+        except DeadObjectError:
             pass

@@ -1,6 +1,7 @@
 # Audio Equalizer
 
 * Autor: Daliana
+* Versión: 1.6.4
 * Compatibilidad con NVDA: 2023.1 en adelante
 * Descarga de la versión estable: https://github.com/daliana907/audioEqualizer
 
@@ -20,13 +21,28 @@ Sus capacidades incluyen:
 
 ## Cómo usarlo
 
-El panel de control principal se abre mediante atajos de teclado o desde el menú de herramientas de NVDA. Dentro de este panel, podrás saltar entre pestañas para ajustar las bandas de frecuencia, activar los efectos especiales o probar el sonido de cada auricular por separado.
+El panel de control principal se abre mediante atajos de teclado o desde el menú de herramientas de NVDA. Dentro de este panel, podrás saltar entre secciones para ajustar las bandas de frecuencia, activar los efectos especiales o probar el sonido de cada auricular por separado.
+
+El complemento no asigna gestos por defecto para evitar conflictos; puedes asignar tus propios atajos en el menú NVDA > Preferencias > Gestos de entrada, categoría "Audio Equalizer".
 
 Además, cuenta con una lista de perfiles acústicos de fábrica y te permite guardar, nombrar y borrar los tuyos propios de forma ilimitada.
+
+En equipos estéreo, los niveles de central y subwoofer actúan como realce de voces y de graves; el nivel de traseros necesita contenido multicanal. Las mezclas inteligentes actúan con películas o juegos con sonido multicanal.
 
 ## Requisito Obligatorio
 
 Para que el complemento surta efecto, es indispensable tener instalado en tu computadora el programa gratuito Equalizer APO. Una vez instalado, debes abrir su herramienta "Configurator" y marcar allí la tarjeta de sonido, los altavoces o auriculares que quieras ecualizar. Luego, reinicias tu equipo y el complemento se encargará de darle las instrucciones de sonido a ese programa por detrás.
+
+## Seguridad y recuperación
+
+*   Los perfiles y el estado se validan al cargarse; si un archivo de ajustes se daña, se restauran valores seguros para que NVDA pueda iniciar.
+*   Las modificaciones de perfiles de fábrica conservan una copia fechada antes de reemplazarse.
+*   La descarga de Equalizer APO usa conexión segura, tiempo de espera, reintentos y comprobación del archivo. Radar y sonido 3D son efectos alternativos y no se activan juntos.
+*   Modo compatible: en equipos donde las órdenes de mover canales (ancho, mono, inversión, 3D y radar) detienen el audio, deja el ancho en 100. Las curvas, filtros y volumen se aplican igual.
+
+## Créditos de terceros
+
+*   Equalizer APO (https://sourceforge.net/projects/equalizerapo) por jthedering y colaboradores, bajo GNU GPLv2.
 
 ## Créditos
 

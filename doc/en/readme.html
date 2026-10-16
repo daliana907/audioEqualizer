@@ -56,7 +56,7 @@ hr {
 <h1>Audio Equalizer for NVDA</h1>
 <ul>
 <li>Author: Daliana</li>
-<li>Version: 1.6.1</li>
+<li>Version: 1.6.4</li>
 <li>Compatibility: NVDA 2023.1 and later</li>
 <li>License: GNU GPL v2</li>
 </ul>
@@ -112,7 +112,34 @@ hr {
 <li>View Log button to inspect real-time audio commands.</li>
 <li>Conflict detection tool in the Tools menu to identify overlapping shortcuts.</li>
 </ul>
+<h3>Channel Configuration and Surround</h3>
+<p>The dialog includes a channel configuration list (stereo, 5.1, 7.1, quadraphonic and smart downmixes to stereo) with center, subwoofer and rear level controls. On stereo equipment, the center and subwoofer levels act as voice and bass enhancement; the rear level needs multichannel content.</p>
+
+<h2>Safety and Recovery</h2>
+<ul>
+<li>Profiles and the active state are validated before loading. If a settings file is damaged, safe values are restored so NVDA can start.</li>
+<li>Customized built-in profiles retain a dated backup before an override is replaced.</li>
+<li>Equalizer APO downloads use a secure connection, timeout, retries, and downloaded-file checks. The download can be cancelled from its dialog.</li>
+<li>Radar and 3D surround are alternative effects and cannot be enabled together.</li>
+<li>Channel orders: stereo width, mono, swap, 3D and radar are sent to the audio engine. On some USB headsets they may stop all audio; leave width at 100 if that happens. Curves, filters and volume still apply.</li>
+</ul>
 <hr />
+<h2>What's new in 1.6.4</h2>
+<ul>
+<li>Channel configuration and surround: channel mode list with center, subwoofer and rear levels.</li>
+<li>Stereo width using the syntax understood by the audio engine.</li>
+<li>Profiles with width at normal value and honest reporting of channel effects.</li>
+</ul>
+<ul>
+<li>Focus-jump and menu auto-open prevention: unique 'Ecualizador de &Audio' mnemonic (A key) in the Tools menu, removing the E-letter collision and involuntary auto-expansion while navigating with the keyboard.</li>
+<li>nvda.ini reading fix: resolved internal dictionary-unpack failure when reading NVDA AggregatedSection at startup, ensuring faithful restore of saved state.</li>
+<li>Preventive submenu cleanup when reloading add-ons without restarting NVDA.</li>
+</ul>
+<h2>What's new in 1.6.2</h2>
+<ul>
+<li>Menu stability: fixed and hardened the Tools-menu submenu lifecycle, ensuring clean event unbinding and safe removal when restarting or reloading add-ons.</li>
+<li>Involuntary activation prevention: accessible help text and precise identifier handling to avoid focus jumps or accidental openings.</li>
+</ul>
 <h2>What's new in 1.6.1</h2>
 <ul>
 <li><strong>Indestructible Equalizer State Persistence:</strong> Fixed an issue where the equalizer could turn off or reset to flat/default on NVDA restart or PC reboot.</li>

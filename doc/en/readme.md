@@ -1,7 +1,7 @@
 # Audio Equalizer for NVDA
 
 - Author: Daliana
-- Version: 1.6.1
+- Version: 1.6.4
 - Compatibility: NVDA 2023.1 and later
 - License: GNU GPL v2
 
@@ -25,7 +25,6 @@ To avoid conflicts with NVDA built-in commands or other add-ons (such as System 
 You can access all functions directly from NVDA Menu > Tools > Audio Equalizer, or assign your own preferred shortcuts in NVDA Menu > Preferences > Input Gestures under the "Audio Equalizer" category.
 
 Available actions include:
-
 - Increase / decrease bass (1 dB steps).
 - Increase / decrease treble (1 dB steps).
 - Increase / decrease preamp volume (1 dB steps).
@@ -70,7 +69,37 @@ Optional filters designed for headphone listening:
 - View Log button to inspect real-time audio commands.
 - Conflict detection tool in the Tools menu to identify overlapping shortcuts.
 
+### Channel Configuration and Surround
+
+The dialog includes a channel configuration list (stereo, 5.1, 7.1, quadraphonic and smart downmixes to stereo) with center, subwoofer and rear level controls. On stereo equipment, the center and subwoofer levels act as voice and bass enhancement; the rear level needs multichannel content. Smart downmixes act on movies or games with multichannel sound.
+
+## Safety and Recovery
+
+- Profiles and the active state are validated before they are loaded. If a settings file is damaged, the add-on restores safe values instead of preventing NVDA from starting.
+- When a built-in profile is customized, a dated backup of the override is kept before it is replaced.
+- Channel orders: stereo width, mono, swap, 3D and radar are sent to the audio engine. On some USB headsets they may cut all audio; if that happens, leave width at 100.
+- Equalizer APO downloads use a secure connection, timeout, retries, and downloaded-file checks. You can cancel the download from its dialog.
+- Radar and 3D surround cannot be enabled together because they are alternative effects.
+- If Equalizer APO needs permission to update its configuration, NVDA announces it instead of repeatedly failing silently.
+
 ---
+
+## What's new in 1.6.4
+
+- Channel configuration and surround: channel mode list with center, subwoofer and rear levels.
+- Stereo width using the syntax understood by the audio engine.
+- Profiles with width at normal value and honest reporting of channel effects.
+
+## What's new in 1.6.3
+
+- Focus-jump and menu auto-open prevention: unique 'Ecualizador de &Audio' mnemonic (A key) in the Tools menu, removing the E-letter collision and involuntary auto-expansion while navigating with the keyboard.
+- nvda.ini reading fix: resolved internal dictionary-unpack failure when reading NVDA AggregatedSection at startup, ensuring faithful restore of saved state.
+- Preventive submenu cleanup when reloading add-ons without restarting NVDA.
+
+## What's new in 1.6.2
+
+- Menu stability: fixed and hardened the Tools-menu submenu lifecycle, ensuring clean event unbinding and safe removal when restarting or reloading add-ons.
+- Involuntary activation prevention: accessible help text and precise identifier handling to avoid focus jumps or accidental openings.
 
 ## What's new in 1.6.1
 
@@ -126,6 +155,10 @@ Optional filters designed for headphone listening:
 - Smoother headphone orientation test: left, right, and center test tones now play smoothly with gentle fades, eliminating clicks and avoiding default Windows notification sounds when audio devices are busy.
 - Improved settings window stability: resolved errors that could occur when quickly closing the settings dialog while audio adjustments were being applied.
 - Clean uninstallation: uninstalling or updating the add-on completely removes temporary files without leaving leftover traces on your computer.
+
+### Third-party credits
+
+*   Equalizer APO (https://sourceforge.net/projects/equalizerapo) by jthedering and contributors, under GNU GPLv2.
 
 ### Credits
 - Audio Processing Engine: Equalizer APO by jthedering and contributors (GNU GPL).
